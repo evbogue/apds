@@ -64,4 +64,32 @@ bogbot.open = async (msg) => {
   return opened
 }
 
+import { extractYaml } from './lib/frontmatter.js'
+import { parse } from './lib/yaml.js'
 
+export const parseYaml = async (doc) => {
+  try {
+    const extracted = await extractYaml(doc)
+    const front = await parse(extracted.frontMatter)
+    front.body = extracted.body
+    return front
+  } catch (err) {
+    return { body: doc}
+  }
+}
+
+bogbot.compose = async (content) => {
+  const name = localStorage.getItem('name') ? 'name: ' + localStorage.getItem('name') : ''
+  const image = localStorage.getItem('image') ? 'image:' + localStorage.getItem('image') : ''
+
+  const yaml = `---
+${name}
+${image}
+---
+${content}
+  `
+  const obj = await parseYaml(yaml)
+  console.log(yaml)
+  console.log(obj)  
+  return yaml
+}
