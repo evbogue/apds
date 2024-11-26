@@ -1,40 +1,19 @@
 import { bogbot } from './bogbot.js'
+import { profile } from './profile.js'
+import { composer } from './composer.js' 
+import { render } from './render.js'
 
-const na = document.createElement('input')
+document.body.appendChild(await profile())
+document.body.appendChild(await composer())
 
-na.placeholder = localStorage.getItem('name') || await bogbot.pubkey()
+const scroller = document.createElement('div')
+scroller.id = 'scroller'
 
-const nb = document.createElement('button')
+document.body.appendChild(scroller)
 
-nb.textContent = 'Save'
+const log = await bogbot.getLog()
 
-nb.onclick = () => {
-  localStorage.setItem('name', na.value)
-  na.placeholder = na.value 
-  na.value = ''
-}
-
-document.body.appendChild(na)
-document.body.appendChild(nb)
-
-const ta = document.createElement('textarea')
-
-ta.placeholder = 'Write a message'
-
-document.body.appendChild(ta)
-
-const b = document.createElement('button')
-
-b.textContent = 'Sign'
-
-b.onclick = async () => {
-  const yaml = await bogbot.compose(ta.value)    
-  const signed = await bogbot.sign(yaml)
-  const el = document.createElement('div')
-  el.textContent = yaml + '\n\n' + signed
-  document.body.appendChild(el)
-}
-
-document.body.appendChild(b)
-
-
+log.forEach(async (hash) => {
+  const rendered = await render(hash)
+  scroller.insertBefore(rendered, scroller.firstChild)
+})

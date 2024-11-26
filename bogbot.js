@@ -48,14 +48,17 @@ bogbot.hash = async (data) => {
 bogbot.sign = async (data) => {
   const timestamp = Date.now()
 
-  const hash = await bogbot.hash(data)
+  const hash = await bogbot.make(data)
 
   const sig = encode(nacl.sign(new TextEncoder().encode(timestamp + hash), decode(await bogbot.privkey())))
-
-  return await bogbot.pubkey() + sig
+  await bogbot.add(await bogbot.pubkey() + sig)
+  const protocolMsg = await bogbot.make(await bogbot.pubkey() + sig)
+  localStorage.setItem('previous', protocolMsg)
+  return protocolMsg
 }
 
 bogbot.open = async (msg) => {
+  console.log(msg)
   const pubkey = msg.substring(0, 44)
   const sig = msg.substring(44)
 
@@ -67,7 +70,7 @@ bogbot.open = async (msg) => {
 import { extractYaml } from './lib/frontmatter.js'
 import { parse } from './lib/yaml.js'
 
-export const parseYaml = async (doc) => {
+bogbot.yaml = async (doc) => {
   try {
     const extracted = await extractYaml(doc)
     const front = await parse(extracted.frontMatter)
@@ -81,15 +84,62 @@ export const parseYaml = async (doc) => {
 bogbot.compose = async (content) => {
   const name = localStorage.getItem('name') ? 'name: ' + localStorage.getItem('name') : ''
   const image = localStorage.getItem('image') ? 'image:' + localStorage.getItem('image') : ''
+  // previous should be a bogbot.query in case multiple devices are in use but we need to get the log going again first
+  const previous = localStorage.getItem('previous') ? 'previous:' + localStorage.getItem('previous') : ''
 
   const yaml = `---
 ${name}
 ${image}
+${previous}
 ---
 ${content}
   `
-  const obj = await parseYaml(yaml)
-  console.log(yaml)
-  console.log(obj)  
-  return yaml
+  const signed = await bogbot.sign(yaml)
+  return signed
+}
+
+bogbot.make = async (data) => {
+  const hash = await bogbot.hash(data)
+
+  await cachekv.put(hash, data)
+
+  return hash
+}
+
+bogbot.find = async (hash) => {
+  const blob = await cachekv.get(hash)
+
+  return blob
+}
+
+let newMessages = false
+
+setInterval(async () => {
+  if (newMessages) {
+    console.log(log)
+    await cachekv.put('log', JSON.stringify(log))
+    newMessages = false
+  } 
+}, 1000)
+
+let log = []
+const getLog = await cachekv.get('log')
+if (getLog) {
+  console.log(getLog) 
+  log = JSON.parse(getLog)
+}
+
+console.log(log)
+
+bogbot.add = async (msg) => {
+  const opened = await bogbot.open(msg)
+  if (opened) {
+    const hash = await bogbot.make(msg)
+    log.push(hash)
+    newMessages = true
+  }
+}
+
+bogbot.getLog = async () => {
+  return log
 }
