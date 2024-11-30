@@ -58,7 +58,6 @@ bogbot.sign = async (data) => {
 }
 
 bogbot.open = async (msg) => {
-  console.log(msg)
   const pubkey = msg.substring(0, 44)
   const sig = msg.substring(44)
 
@@ -82,18 +81,14 @@ bogbot.yaml = async (doc) => {
 }
 
 bogbot.compose = async (content) => {
-  const name = localStorage.getItem('name') ? 'name: ' + localStorage.getItem('name') : ''
-  const image = localStorage.getItem('image') ? 'image:' + localStorage.getItem('image') : ''
+  const name = localStorage.getItem('name') ? 'name: ' + localStorage.getItem('name') + '\n' : ''
+  const image = localStorage.getItem('image') ? 'image: ' + localStorage.getItem('image') + '\n' : ''
   // previous should be a bogbot.query in case multiple devices are in use but we need to get the log going again first
-  const previous = localStorage.getItem('previous') ? 'previous:' + localStorage.getItem('previous') : ''
+  const previous = localStorage.getItem('previous') ? 'previous: ' + localStorage.getItem('previous') + '\n' : ''
 
   const yaml = `---
-${name}
-${image}
-${previous}
----
-${content}
-  `
+${name}${image}${previous}---
+${content}`
   const signed = await bogbot.sign(yaml)
   return signed
 }

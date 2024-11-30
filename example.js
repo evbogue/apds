@@ -14,6 +14,5 @@ document.body.appendChild(scroller)
 const log = await bogbot.getLog()
 
 log.forEach(async (hash) => {
-  const rendered = await render(hash)
-  scroller.insertBefore(rendered, scroller.firstChild)
+  await render.hash(hash, scroller)
 })
