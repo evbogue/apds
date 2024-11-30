@@ -19,16 +19,11 @@ The timestamp is required since this is a social network. The sha256 hashlinks e
 Everything in the **protocol message** is we need to sort and authenticate a feed. Everything in the **content message** is what we need to render a message.
 
 ```
----
-timestamp: Date.now()
----
-
-Content
+Text content
 ```
 
-Timestamps are required. Everything else is optional, but we'd really like there to be a previous post so we can sync a feed in the client. Using Yaml leaves the protocol open to new concepts, such as an edit field. 
 
-A full post might look like
+A full post might look like this: 
 
 ```
 ---
@@ -37,7 +32,7 @@ name: Ev
 image: sha256 of image blob
 edit: sha256 hash of edited protocol message
 ---
-Content of message
+Content
 ```
 
 This means you could in theory edit your name and/or image on a post! But we also want a record of what your name and image was on the original post, since it is a security issue with some actors on decentralized social networks if you allow publishers to change their name over their entire feed. Or, for example, in a hack it would be harder to rewrite history.
