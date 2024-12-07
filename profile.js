@@ -1,13 +1,10 @@
 import { h } from './lib/h.js' 
 import { bogbot } from './bogbot.js'
-import { cachekv } from './lib/cachekv.js'
-import { vb } from './lib/vb.js'
-import { decode } from './lib/base64.js'
 
 export const profile = async () => {
   const div = h('div')
 
-  const avatarImg = vb(decode(await bogbot.pubkey()), 256)
+  const avatarImg = await bogbot.visual(await bogbot.pubkey())
 
   const existingImage = await localStorage.getItem('image')
   

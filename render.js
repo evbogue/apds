@@ -1,8 +1,5 @@
 import { bogbot } from './bogbot.js'
 import { h } from './lib/h.js'
-import { human } from './lib/human.js'
-import { vb } from './lib/vb.js'
-import { decode } from './lib/base64.js'
 
 export const render = {}
 
@@ -13,12 +10,12 @@ render.blob = async (blob) => {
 
   try {
     const opened = await bogbot.open(blob)
-    const ts = h('span', [await human(new Date(parseInt(opened.substring(0, 13))))])
+    const ts = h('span', [await bogbot.human(opened.substring(0, 13))])
     setInterval(async () => {
-      ts.textContent = await human(new Date(parseInt(opened.substring(0, 13))))
+      ts.textContent = await bogbot.human(opened.substring(0, 13))
     }, 1000)
     if (div) {
-      const img = vb(decode(blob.substring(0, 44)))
+      const img = await bogbot.visual(blob.substring(0, 44))
       img.id = 'image'
       img.style = 'width: 30px; height: 30px; float: left; margin-right: 5px; object-fit: cover;'
       div.appendChild(img)

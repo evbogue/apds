@@ -1,6 +1,8 @@
 import nacl from './lib/nacl-fast-es.js'
 import { decode, encode } from './lib/base64.js'
 import { cachekv } from './lib/cachekv.js'
+import { human } from './lib/human.js'
+import { vb } from './lib/vb.js'
 
 export const bogbot = {}
 
@@ -137,4 +139,12 @@ bogbot.add = async (msg) => {
 
 bogbot.getLog = async () => {
   return log
+}
+
+bogbot.human = async (ts) => {
+  return await human(new Date(parseInt(ts)))
+}
+
+bogbot.visual = async (pubkey) => {
+  return vb(decode(await bogbot.pubkey()), 256)
 }
