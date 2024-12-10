@@ -147,5 +147,5 @@ bogbot.human = async (ts) => {
 }
 
 bogbot.visual = async (pubkey) => {
-  return vb(decode(await bogbot.pubkey()), 256)
+  return vb(decode(pubkey), 256)
 }
