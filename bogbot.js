@@ -9,28 +9,29 @@ export const bogbot = {}
 bogbot.generate = async () => {
   const genkey = nacl.sign.keyPair()
   const keygen = encode(genkey.publicKey) + encode(genkey.secretKey)
+  await localStorage.setItem('keypair', keygen)
   return keygen
 }
 
 bogbot.keypair = async () => {
   const keypair = await localStorage.getItem('keypair')
-  if (!keypair) {
-    const keypair = await bogbot.generate()
-    await localStorage.setItem('keypair', keypair)
-    return keypair
-  } else {
+  if (keypair) {
     return keypair
   }
 }
 
 bogbot.pubkey = async () => {
   const keypair = await bogbot.keypair()
-  return keypair.substring(0, 44)
+  if (keypair) {
+    return keypair.substring(0, 44)
+  }
 }
 
 bogbot.privkey = async () => {
   const keypair = await bogbot.keypair()
-  return keypair.substring(44)
+  if (keypair) {
+    return keypair.substring(44)
+  }
 }
 
 bogbot.deletekey = async () => {

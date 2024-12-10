@@ -3,6 +3,10 @@ import { profile } from './profile.js'
 import { composer } from './composer.js' 
 import { render } from './render.js'
 
+if (!await bogbot.pubkey()) { 
+  const keypair = await bogbot.generate()
+}
+
 document.body.appendChild(await profile())
 document.body.appendChild(await composer())
 
