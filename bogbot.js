@@ -133,8 +133,10 @@ bogbot.add = async (msg) => {
   const opened = await bogbot.open(msg)
   if (opened) {
     const hash = await bogbot.make(msg)
-    log.push(hash)
-    newMessages = true
+    if (!log.includes(hash)) {
+      log.push(hash)
+      newMessages = true
+    }
   }
 }
 
