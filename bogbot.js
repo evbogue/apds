@@ -9,7 +9,7 @@ export const bogbot = {}
 bogbot.generate = async () => {
   const genkey = nacl.sign.keyPair()
   const keygen = encode(genkey.publicKey) + encode(genkey.secretKey)
-  await localStorage.setItem('keypair', keygen)
+  //await localStorage.setItem('keypair', keygen)
   return keygen
 }
 

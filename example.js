@@ -5,6 +5,7 @@ import { render } from './render.js'
 
 if (!await bogbot.pubkey()) { 
   const keypair = await bogbot.generate()
+  await localStorage.setItem('keypair', keypair)
 }
 
 document.body.appendChild(await profile())
