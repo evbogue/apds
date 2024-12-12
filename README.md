@@ -1,5 +1,13 @@
 # Bog5 Protocol
 
+The 5th Bogbook protocol implementation.
+
+Try it at https://bog5.deno.dev/ 
+
+Please note the above link is not networked. For a fuller and networked version be sure to check out https://wiredove.net/
+
+### The Protocol
+
 Bogbook has been thru a few iterations. For the fans, thanks for sticking with me. For the people who want standards, I solicit your feedback. And now, the protocol...
 
 We send around sha256 hashes since we're using content-addressable storage for everything. First we request the hash that finds us a **protocol message**:
