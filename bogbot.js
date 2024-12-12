@@ -69,31 +69,33 @@ bogbot.open = async (msg) => {
   return opened
 }
 
-import { extractYaml } from './lib/frontmatter.js'
-import { parse } from './lib/yaml.js'
+import { yaml } from './lib/yaml.js'
 
-bogbot.yaml = async (doc) => {
-  try {
-    const extracted = await extractYaml(doc)
-    const front = await parse(extracted.frontMatter)
-    front.body = extracted.body
-    return front
-  } catch (err) {
-    return { body: doc}
-  }
+bogbot.parseYaml = async (doc) => {
+  return await yaml.parse(doc)
+}
+
+bogbot.createYaml = async (obj, content) => {
+  return await yaml.create(obj, content)
 }
 
 bogbot.compose = async (content) => {
-  const name = localStorage.getItem('name') ? 'name: ' + localStorage.getItem('name') + '\n' : ''
-  const image = localStorage.getItem('image') ? 'image: ' + localStorage.getItem('image') + '\n' : ''
-  // previous should be a bogbot.query in case multiple devices are in use but we need to get the log going again first
-  const previous = localStorage.getItem('previous') ? 'previous: ' + localStorage.getItem('previous') + '\n' : ''
+  const obj = {}
 
-  const yaml = `---
-${name}${image}${previous}---
-${content}`
-  const signed = await bogbot.sign(yaml)
-  return signed
+  const name = localStorage.getItem('name')
+  const image = localStorage.getItem('image')
+  const previous = localStorage.getItem('previous')
+
+  if (name) { obj.name = name}
+  if (image) { obj.image = image}
+  if (previous) { obj.previous = previous}
+
+  if (Object.keys(obj).length > 0) { 
+    const yaml = await bogbot.createYaml(obj, content)
+    return await bogbot.sign(yaml)
+  } else {
+    return await bogbot.sign(content)
+  } 
 }
 
 bogbot.make = async (data) => {

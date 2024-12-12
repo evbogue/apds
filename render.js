@@ -31,7 +31,7 @@ render.blob = async (blob) => {
     }
   } catch (err) {
     console.log('Not a valid protocol message')
-    const yaml = await bogbot.yaml(blob)
+    const yaml = await bogbot.parseYaml(blob)
     if (div) {
       div.textContent = yaml.body
       div.parentNode.childNodes.forEach(async (node) => {
