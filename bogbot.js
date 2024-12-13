@@ -116,7 +116,6 @@ let newMessages = false
 
 setInterval(async () => {
   if (newMessages) {
-    console.log(log)
     await cachekv.put('log', JSON.stringify(log))
     newMessages = false
   } 
@@ -125,11 +124,8 @@ setInterval(async () => {
 let log = []
 const getLog = await cachekv.get('log')
 if (getLog) {
-  console.log(getLog) 
   log = JSON.parse(getLog)
 }
-
-console.log(log)
 
 bogbot.add = async (msg) => {
   const opened = await bogbot.open(msg)
