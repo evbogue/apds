@@ -134,6 +134,7 @@ bogbot.add = async (msg) => {
     if (!log.includes(hash)) {
       log.push(hash)
       newMessages = true
+      sort = true
     }
   }
 }
@@ -149,3 +150,36 @@ bogbot.human = async (ts) => {
 bogbot.visual = async (pubkey) => {
   return vb(decode(pubkey), 256)
 }
+
+let sort = true
+
+setInterval(async () => {
+  if (sort) {
+    const newArray = []
+ 
+    await Promise.all(log.map(async (hash) => {
+      const obj = {
+        hash,
+        sig: await bogbot.find(hash)
+      }
+      obj.opened = await bogbot.open(obj.sig)
+      console.log(obj)
+      obj.ts = obj.opened.substring(0, 13)
+      newArray.push(obj)
+    }))
+    
+    await newArray.sort((a,b) => a.ts - b.ts) 
+    console.log(newArray)
+
+    const newLog = []
+
+    await newArray.forEach(msg => {
+      newLog.push(msg.hash)
+    })
+
+    console.log(newLog)
+    log = newLog
+    newMessages = true
+    sort = false
+  }
+}, 20000)
