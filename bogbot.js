@@ -61,12 +61,16 @@ bogbot.sign = async (data) => {
 }
 
 bogbot.open = async (msg) => {
-  const pubkey = msg.substring(0, 44)
-  const sig = msg.substring(44)
+  try {
+    const pubkey = msg.substring(0, 44)
+    const sig = msg.substring(44)
 
-  const opened = new TextDecoder().decode(nacl.sign.open(decode(sig), decode(pubkey)))
+    const opened = new TextDecoder().decode(nacl.sign.open(decode(sig), decode(pubkey)))
 
-  return opened
+    return opened
+  } catch (err) {
+    console.log('Not a valid Bog5 protocol message')
+  }
 }
 
 import { yaml } from './lib/yaml.js'
