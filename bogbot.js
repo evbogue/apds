@@ -165,7 +165,7 @@ bogbot.get = async (hash) => {
   return blob
 }
 
-bogbot.save = async (key, value) => {
+bogbot.put = async (key, value) => {
   await db.put(key, value)
 }
 

@@ -47,12 +47,12 @@ export const profile = async () => {
           const croppedImage = canvas.toDataURL()
           avatarImg.src = croppedImage
           const hash = await bogbot.make(croppedImage)
-          await bogbot.save('image', hash)
+          await bogbot.put('image', hash)
         } else {
           const croppedImage = canvas.toDataURL()
           avatarImg.src = img.src
           const hash = await bogbot.make(img.src)
-          await bogbot.save('image', hash)
+          await bogbot.put('image', hash)
         }
       }
       img.src = e.target.result
@@ -79,7 +79,7 @@ export const profile = async () => {
     h('button', {onclick: async () => {
       if (namer.value) {
         namer.placeholder = namer.value
-        await bogbot.save('name', namer.value)
+        await bogbot.put('name', namer.value)
         namer.value = ''
       }
     }}, ['Save'])

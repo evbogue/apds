@@ -7,7 +7,7 @@ await bogbot.start('bog5example')
 
 if (!await bogbot.pubkey()) { 
   const keypair = await bogbot.generate()
-  await bogbot.save('keypair', keypair)
+  await bogbot.put('keypair', keypair)
 }
 
 document.body.appendChild(await profile())
