@@ -12,8 +12,6 @@ let sort = true
 export const bogbot = {}
 
 bogbot.start = async (appId) => {
-  console.log(appId)
- 
   db = await cachekv(appId)
   
   setInterval(async () => {
@@ -120,7 +118,7 @@ bogbot.open = async (msg) => {
 
     return opened
   } catch (err) {
-    console.log('Not a valid Bog5 protocol message')
+    //console.log('Not a valid Bog5 protocol message')
   }
 }
 
@@ -168,8 +166,6 @@ bogbot.get = async (hash) => {
 }
 
 bogbot.save = async (key, value) => {
-  console.log(key)
-  console.log(value)
   await db.put(key, value)
 }
 
