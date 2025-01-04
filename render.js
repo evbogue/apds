@@ -22,7 +22,7 @@ render.blob = async (blob) => {
       div.appendChild(h('a', {href: '#' + blob.substring(0, 44), id: 'name'}, [blob.substring(0, 10)]))
       div.appendChild(h('a', {href: '#' + hash, style: 'float: right;'}, [ts]))
       div.appendChild(h('div', {id: opened.substring(13)}))
-      const content = await bogbot.find(opened.substring(13))
+      const content = await bogbot.get(opened.substring(13))
       if (content) {
         await render.blob(content)
       }
@@ -39,7 +39,7 @@ render.blob = async (blob) => {
           node.textContent = yaml.name
         }
         if (yaml.image && node.id === 'image') {
-          const image = await bogbot.find(yaml.image)
+          const image = await bogbot.get(yaml.image)
           node.src = image
         }
       })
@@ -53,7 +53,7 @@ render.hash = async (hash, scroller) => {
 
   scroller.insertBefore(div, scroller.firstChild)
 
-  const sig = await bogbot.find(hash)
+  const sig = await bogbot.get(hash)
 
   if (sig) {
     await render.blob(sig)

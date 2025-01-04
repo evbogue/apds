@@ -6,9 +6,9 @@ export const profile = async () => {
 
   const avatarImg = await bogbot.visual(await bogbot.pubkey())
 
-  const existingImage = await bogbot.find('image')
+  const existingImage = await bogbot.get('image')
   
-  if (existingImage) { avatarImg.src = await bogbot.find(existingImage)}
+  if (existingImage) { avatarImg.src = await bogbot.get(existingImage)}
 
   avatarImg.style = 'height: 30px; width: 30px; float: left; margin-right: 5px; object-fit: cover;'
 
@@ -67,7 +67,7 @@ export const profile = async () => {
 
   div.appendChild(h('div', [await bogbot.pubkey()]))
 
-  const name = await bogbot.find('name')
+  const name = await bogbot.get('name')
   
   const namer = h('input', {
     placeholder: name || 'Name yourself'

@@ -36,7 +36,7 @@ bogbot.start = async (appId) => {
       await Promise.all(log.map(async (hash) => {
         const obj = {
           hash,
-          sig: await bogbot.find(hash)
+          sig: await bogbot.get(hash)
         }
         obj.opened = await bogbot.open(obj.sig)
         obj.ts = obj.opened.substring(0, 13)
@@ -161,7 +161,7 @@ bogbot.make = async (data) => {
   return hash
 }
 
-bogbot.find = async (hash) => {
+bogbot.get = async (hash) => {
   const blob = await db.get(hash)
 
   return blob
