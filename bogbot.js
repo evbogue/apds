@@ -4,17 +4,68 @@ import { cachekv } from './lib/cachekv.js'
 import { human } from './lib/human.js'
 import { vb } from './lib/vb.js'
 
+let db
+let log = []
+let newMessages = false
+let sort = true
+
 export const bogbot = {}
+
+bogbot.start = async (appId) => {
+  console.log(appId)
+ 
+  db = await cachekv(appId)
+  
+  setInterval(async () => {
+    if (newMessages) {
+      await db.put('log', JSON.stringify(log))
+      newMessages = false
+    } 
+  }, 1000)
+  
+  const getLog = await db.get('log')
+  if (getLog) {
+    log = JSON.parse(getLog)
+  }
+
+  
+  setInterval(async () => {
+    if (sort) {
+      const newArray = []
+   
+      await Promise.all(log.map(async (hash) => {
+        const obj = {
+          hash,
+          sig: await bogbot.find(hash)
+        }
+        obj.opened = await bogbot.open(obj.sig)
+        obj.ts = obj.opened.substring(0, 13)
+        newArray.push(obj)
+      }))
+      
+      await newArray.sort((a,b) => a.ts - b.ts) 
+  
+      const newLog = []
+  
+      await newArray.forEach(msg => {
+        newLog.push(msg.hash)
+      })
+  
+      log = newLog
+      newMessages = true
+      sort = false
+    }
+  }, 20000)
+}
 
 bogbot.generate = async () => {
   const genkey = nacl.sign.keyPair()
   const keygen = encode(genkey.publicKey) + encode(genkey.secretKey)
-  //await localStorage.setItem('keypair', keygen)
   return keygen
 }
 
 bogbot.keypair = async () => {
-  const keypair = await localStorage.getItem('keypair')
+  const keypair = await db.get('keypair')
   if (keypair) {
     return keypair
   }
@@ -35,7 +86,7 @@ bogbot.privkey = async () => {
 }
 
 bogbot.deletekey = async () => {
-  localStorage.removeItem('keypair')
+  db.rm('keypair')
 }
 
 bogbot.hash = async (data) => {
@@ -56,7 +107,7 @@ bogbot.sign = async (data) => {
   const sig = encode(nacl.sign(new TextEncoder().encode(timestamp + hash), decode(await bogbot.privkey())))
   await bogbot.add(await bogbot.pubkey() + sig)
   const protocolMsg = await bogbot.make(await bogbot.pubkey() + sig)
-  localStorage.setItem('previous', protocolMsg)
+  db.put('previous', protocolMsg)
   return protocolMsg
 }
 
@@ -86,9 +137,9 @@ bogbot.createYaml = async (obj, content) => {
 bogbot.compose = async (content) => {
   const obj = {}
 
-  const name = localStorage.getItem('name')
-  const image = localStorage.getItem('image')
-  const previous = localStorage.getItem('previous')
+  const name = await db.get('name')
+  const image = await db.get('image')
+  const previous = await db.get('previous')
 
   if (name) { obj.name = name}
   if (image) { obj.image = image}
@@ -105,30 +156,21 @@ bogbot.compose = async (content) => {
 bogbot.make = async (data) => {
   const hash = await bogbot.hash(data)
 
-  await cachekv.put(hash, data)
+  await db.put(hash, data)
 
   return hash
 }
 
 bogbot.find = async (hash) => {
-  const blob = await cachekv.get(hash)
+  const blob = await db.get(hash)
 
   return blob
 }
 
-let newMessages = false
-
-setInterval(async () => {
-  if (newMessages) {
-    await cachekv.put('log', JSON.stringify(log))
-    newMessages = false
-  } 
-}, 1000)
-
-let log = []
-const getLog = await cachekv.get('log')
-if (getLog) {
-  log = JSON.parse(getLog)
+bogbot.save = async (key, value) => {
+  console.log(key)
+  console.log(value)
+  await db.put(key, value)
 }
 
 bogbot.add = async (msg) => {
@@ -155,32 +197,3 @@ bogbot.visual = async (pubkey) => {
   return vb(decode(pubkey), 256)
 }
 
-let sort = true
-
-setInterval(async () => {
-  if (sort) {
-    const newArray = []
- 
-    await Promise.all(log.map(async (hash) => {
-      const obj = {
-        hash,
-        sig: await bogbot.find(hash)
-      }
-      obj.opened = await bogbot.open(obj.sig)
-      obj.ts = obj.opened.substring(0, 13)
-      newArray.push(obj)
-    }))
-    
-    await newArray.sort((a,b) => a.ts - b.ts) 
-
-    const newLog = []
-
-    await newArray.forEach(msg => {
-      newLog.push(msg.hash)
-    })
-
-    log = newLog
-    newMessages = true
-    sort = false
-  }
-}, 20000)

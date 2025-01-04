@@ -3,9 +3,11 @@ import { profile } from './profile.js'
 import { composer } from './composer.js' 
 import { render } from './render.js'
 
+await bogbot.start('bog5example')
+
 if (!await bogbot.pubkey()) { 
   const keypair = await bogbot.generate()
-  await localStorage.setItem('keypair', keypair)
+  await bogbot.save('keypair', keypair)
 }
 
 document.body.appendChild(await profile())

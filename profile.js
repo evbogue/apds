@@ -6,7 +6,7 @@ export const profile = async () => {
 
   const avatarImg = await bogbot.visual(await bogbot.pubkey())
 
-  const existingImage = await localStorage.getItem('image')
+  const existingImage = await bogbot.find('image')
   
   if (existingImage) { avatarImg.src = await bogbot.find(existingImage)}
 
@@ -47,12 +47,12 @@ export const profile = async () => {
           const croppedImage = canvas.toDataURL()
           avatarImg.src = croppedImage
           const hash = await bogbot.make(croppedImage)
-          localStorage.setItem('image', hash)
+          await bogbot.save('image', hash)
         } else {
           const croppedImage = canvas.toDataURL()
           avatarImg.src = img.src
           const hash = await bogbot.make(img.src)
-          localStorage.setItem('image', hash)
+          await bogbot.save('image', hash)
         }
       }
       img.src = e.target.result
@@ -67,7 +67,7 @@ export const profile = async () => {
 
   div.appendChild(h('div', [await bogbot.pubkey()]))
 
-  const name = await localStorage.getItem('name')
+  const name = await bogbot.find('name')
   
   const namer = h('input', {
     placeholder: name || 'Name yourself'
@@ -79,7 +79,7 @@ export const profile = async () => {
     h('button', {onclick: async () => {
       if (namer.value) {
         namer.placeholder = namer.value
-        localStorage.setItem('name', namer.value)
+        await bogbot.save('name', namer.value)
         namer.value = ''
       }
     }}, ['Save'])
