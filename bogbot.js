@@ -199,7 +199,7 @@ bogbot.query = async (query) => {
     const search = query.substring(1).replace(/%20/g, ' ').toUpperCase()
     const result = openedLog.filter(msg => msg.text && msg.text.toUpperCase().includes(search))
     return result
-  } else if (arraystore[0]) {
+  } else if (openedLog[0]) {
     const result = openedLog.filter(msg => msg.author == query || msg.hash == query)
     return result
   }
