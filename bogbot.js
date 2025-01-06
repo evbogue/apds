@@ -140,7 +140,7 @@ bogbot.createYaml = async (obj, content) => {
 }
 
 bogbot.compose = async (content, prev) => {
-  const obj = {}
+  let obj = {}
   if (prev) { obj = prev }
 
   const name = await db.get('name')
