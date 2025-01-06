@@ -139,8 +139,9 @@ bogbot.createYaml = async (obj, content) => {
   return await yaml.create(obj, content)
 }
 
-bogbot.compose = async (content) => {
+bogbot.compose = async (content, prev) => {
   const obj = {}
+  if (prev) { obj = prev }
 
   const name = await db.get('name')
   const image = await db.get('image')
