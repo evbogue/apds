@@ -18,8 +18,12 @@ scroller.id = 'scroller'
 
 document.body.appendChild(scroller)
 
-const log = await bogbot.getLog()
+const log = await bogbot.query()
 
-log.forEach(async (hash) => {
-  await render.hash(hash, scroller)
+log.forEach(async (obj) => {
+  await render.hash(obj.hash, scroller)
 })
+
+const search = await bogbot.query('?hello world')
+
+console.log(search)

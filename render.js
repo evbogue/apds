@@ -57,8 +57,5 @@ render.hash = async (hash, scroller) => {
 
   if (sig) {
     await render.blob(sig)
-  } else {
-    await gossip(hash)
-  }
-
+  } 
 }

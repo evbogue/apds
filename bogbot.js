@@ -5,7 +5,8 @@ import { human } from './lib/human.js'
 import { vb } from './lib/vb.js'
 
 let db
-let log = []
+let hashLog = []
+let openedLog = []
 let newMessages = false
 let sort = true
 
@@ -16,40 +17,46 @@ bogbot.start = async (appId) => {
   
   setInterval(async () => {
     if (newMessages) {
-      await db.put('log', JSON.stringify(log))
+      await db.put('hashlog', JSON.stringify(hashLog))
+      await db.put('openedlog', JSON.stringify(openedLog))
       newMessages = false
     } 
   }, 1000)
   
-  const getLog = await db.get('log')
-  if (getLog) {
-    log = JSON.parse(getLog)
+  const getHashLog = await db.get('hashlog')
+  const getOpenedLog = await db.get('openedlog')
+  if (getHashLog) {
+    hashLog = JSON.parse(getHashLog)
   }
-
+  if (getOpenedLog) {
+    openedLog = JSON.parse(getOpenedLog)
+  }
   
   setInterval(async () => {
     if (sort) {
       const newArray = []
    
-      await Promise.all(log.map(async (hash) => {
+      await Promise.all(hashLog.map(async (hash) => {
         const obj = {
           hash,
           sig: await bogbot.get(hash)
         }
+        obj.author = obj.sig.substring(0, 44)
         obj.opened = await bogbot.open(obj.sig)
+        obj.text = await bogbot.get(obj.opened.substring(13))
         obj.ts = obj.opened.substring(0, 13)
         newArray.push(obj)
       }))
-      
-      await newArray.sort((a,b) => a.ts - b.ts) 
-  
       const newLog = []
+ 
+      await newArray.sort((a,b) => a.ts - b.ts) 
   
       await newArray.forEach(msg => {
         newLog.push(msg.hash)
       })
   
-      log = newLog
+      hashLog = newLog
+      openedLog = newArray
       newMessages = true
       sort = false
     }
@@ -173,8 +180,9 @@ bogbot.add = async (msg) => {
   const opened = await bogbot.open(msg)
   if (opened) {
     const hash = await bogbot.make(msg)
-    if (!log.includes(hash)) {
-      log.push(hash)
+    if (!hashLog.includes(hash)) {
+      hashLog.push(hash)
+      openedLog.push(opened)
       newMessages = true
       sort = true
     }
@@ -182,7 +190,19 @@ bogbot.add = async (msg) => {
 }
 
 bogbot.getLog = async () => {
-  return log
+  return hashLog
+}
+
+bogbot.query = async (query) => {
+  if (openedLog[0] && !query) { return openedLog }
+  if (openedLog[0] && query.startsWith('?')) {
+    const search = query.substring(1).replace(/%20/g, ' ').toUpperCase()
+    const result = openedLog.filter(msg => msg.text && msg.text.toUpperCase().includes(search))
+    return result
+  } else if (arraystore[0]) {
+    const result = openedLog.filter(msg => msg.author == query || msg.hash == query)
+    return result
+  }
 }
 
 bogbot.human = async (ts) => {
