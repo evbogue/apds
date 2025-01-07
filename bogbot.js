@@ -183,7 +183,15 @@ bogbot.add = async (msg) => {
     const hash = await bogbot.make(msg)
     if (!hashLog.includes(hash)) {
       hashLog.push(hash)
-      openedLog.push(opened)
+      const obj = {
+        hash,
+        sig: msg
+      }
+      obj.author = obj.sig.substring(0, 44)
+      obj.opened = opened
+      obj.text = await bogbot.get(obj.opened.substring(13))
+      obj.ts = obj.opened.substring(0, 13)
+      openedLog.push(obj)
       newMessages = true
       sort = true
     }
