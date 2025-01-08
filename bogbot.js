@@ -198,9 +198,9 @@ bogbot.add = async (msg) => {
   }
 }
 
-bogbot.log = async () => {
-  return openedLog
-}
+bogbot.getHashLog = async () => { return hashLog }
+
+bogbot.getOpenedLog = async () => { return openedLog }
 
 bogbot.query = async (query) => {
   if (openedLog[0] && !query) { return openedLog }
