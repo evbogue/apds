@@ -198,8 +198,8 @@ bogbot.add = async (msg) => {
   }
 }
 
-bogbot.getLog = async () => {
-  return hashLog
+bogbot.log = async () => {
+  return openedLog
 }
 
 bogbot.query = async (query) => {
