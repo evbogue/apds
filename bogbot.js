@@ -94,6 +94,10 @@ bogbot.deletekey = async () => {
   db.rm('keypair')
 }
 
+bogbot.clear = async () => {
+  db.clear()
+}
+
 bogbot.hash = async (data) => {
   return encode(
     Array.from(
