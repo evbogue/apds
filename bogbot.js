@@ -181,6 +181,10 @@ bogbot.put = async (key, value) => {
   await db.put(key, value)
 }
 
+bogbot.rm = async (key) => {
+  await db.rm(key)
+}
+
 bogbot.add = async (msg) => {
   const opened = await bogbot.open(msg)
   if (opened) {
