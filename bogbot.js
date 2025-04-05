@@ -222,6 +222,21 @@ bogbot.query = async (query) => {
   }
 }
 
+bogbot.getPubkeys = async () => {
+  const arr = await bogbot.query()
+  const newSet = new Set()
+  for (const msg of arr) {
+    newSet.add(msg.author)
+  }
+  const newArr = [...newSet]
+  return newArr
+}
+
+bogbot.getLatest = async (pubkey) => {
+  const q = openedLog.filter(msg => msg.author === pubkey)
+  return q[q.length -1]
+}
+
 bogbot.human = async (ts) => {
   return await human(new Date(parseInt(ts)))
 }

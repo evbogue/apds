@@ -23,7 +23,3 @@ const log = await bogbot.query()
 log.forEach(async (obj) => {
   await render.hash(obj.hash, scroller)
 })
-
-const search = await bogbot.query('?hello world')
-
-console.log(search)
