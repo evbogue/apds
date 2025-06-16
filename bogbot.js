@@ -37,15 +37,17 @@ bogbot.start = async (appId) => {
       const newArray = []
    
       await Promise.all(hashLog.map(async (hash) => {
-        const obj = {
-          hash,
-          sig: await bogbot.get(hash)
-        }
-        obj.author = obj.sig.substring(0, 44)
-        obj.opened = await bogbot.open(obj.sig)
-        obj.text = await bogbot.get(obj.opened.substring(13))
-        obj.ts = obj.opened.substring(0, 13)
-        newArray.push(obj)
+        try {
+          const obj = {
+            hash,
+            sig: await bogbot.get(hash)
+          }
+          obj.author = obj.sig.substring(0, 44)
+          obj.opened = await bogbot.open(obj.sig)
+          obj.text = await bogbot.get(obj.opened.substring(13))
+          obj.ts = obj.opened.substring(0, 13)
+          newArray.push(obj)
+        } catch (err) { console.log(err) }
       }))
       const newLog = []
  
