@@ -1,4 +1,4 @@
-import { bogbot } from './bogbot.js'
+import { apds } from './apds.js'
 import { render } from './render.js'
 
 export const composer = async () => {
@@ -14,7 +14,7 @@ export const composer = async () => {
   b.textContent = 'Sign'
   
   b.onclick = async () => {
-    const published = await bogbot.compose(ta.value)
+    const published = await apds.compose(ta.value)
     ta.value = ''
     const scroller = document.getElementById('scroller')
     await render.hash(published, scroller)

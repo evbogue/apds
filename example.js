@@ -1,13 +1,14 @@
-import { bogbot } from './bogbot.js'
+import { apds } from './apds.js'
 import { profile } from './profile.js'
 import { composer } from './composer.js' 
 import { render } from './render.js'
 
-await bogbot.start('bog5example')
+await apds.start('apds1')
 
-if (!await bogbot.pubkey()) { 
-  const keypair = await bogbot.generate()
-  await bogbot.put('keypair', keypair)
+if (!await apds.pubkey()) { 
+  const keypair = await apds.generate()
+  console.log(keypair)
+  await apds.put('keypair', keypair)
 }
 
 document.body.appendChild(await profile())
@@ -18,7 +19,7 @@ scroller.id = 'scroller'
 
 document.body.appendChild(scroller)
 
-const log = await bogbot.query()
+const log = await apds.query()
 
 log.forEach(async (obj) => {
   await render.hash(obj.hash, scroller)

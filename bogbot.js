@@ -1,8 +1,8 @@
-import nacl from './lib/nacl-fast-es.js'
-import { decode, encode } from './lib/base64.js'
+import { decode } from './lib/base64.js'
 import { cachekv } from './lib/cachekv.js'
 import { human } from './lib/human.js'
 import { vb } from './lib/vb.js'
+import { an } from 'https://esm.sh/gh/evbogue/anproto@f7cd761/an.js'
 
 let db
 let hashLog = []
@@ -10,9 +10,9 @@ let openedLog = []
 let newMessages = false
 let sort = true
 
-export const bogbot = {}
+export const apds = {}
 
-bogbot.start = async (appId) => {
+apds.start = async (appId) => {
   db = await cachekv(appId)
   
   setInterval(async () => {
@@ -40,11 +40,11 @@ bogbot.start = async (appId) => {
         try {
           const obj = {
             hash,
-            sig: await bogbot.get(hash)
+            sig: await apds.get(hash)
           }
           obj.author = obj.sig.substring(0, 44)
-          obj.opened = await bogbot.open(obj.sig)
-          obj.text = await bogbot.get(obj.opened.substring(13))
+          obj.opened = await apds.open(obj.sig)
+          obj.text = await apds.get(obj.opened.substring(13))
           obj.ts = obj.opened.substring(0, 13)
           newArray.push(obj)
         } catch (err) { console.log(err) }
@@ -65,71 +65,57 @@ bogbot.start = async (appId) => {
   }, 20000)
 }
 
-bogbot.generate = async () => {
-  const genkey = nacl.sign.keyPair()
-  const keygen = encode(genkey.publicKey) + encode(genkey.secretKey)
-  return keygen
+apds.generate = async () => {
+  const genkey = await an.gen()
+  return genkey
 }
 
-bogbot.keypair = async () => {
+apds.keypair = async () => {
   const keypair = await db.get('keypair')
   if (keypair) {
     return keypair
   }
 }
 
-bogbot.pubkey = async () => {
-  const keypair = await bogbot.keypair()
+apds.pubkey = async () => {
+  const keypair = await apds.keypair()
+  console.log(keypair)
   if (keypair) {
     return keypair.substring(0, 44)
   }
 }
 
-bogbot.privkey = async () => {
-  const keypair = await bogbot.keypair()
+apds.privkey = async () => {
+  const keypair = await apds.keypair()
   if (keypair) {
     return keypair.substring(44)
   }
 }
 
-bogbot.deletekey = async () => {
+apds.deletekey = async () => {
   db.rm('keypair')
 }
 
-bogbot.clear = async () => {
+apds.clear = async () => {
   db.clear()
 }
 
-bogbot.hash = async (data) => {
-  return encode(
-    Array.from(
-      new Uint8Array(
-        await crypto.subtle.digest("SHA-256", new TextEncoder().encode(data))
-      )
-    )
-  )
-}
+apds.hash = async (data) => { return await an.hash(data) }
 
-bogbot.sign = async (data) => {
-  const timestamp = Date.now()
+apds.sign = async (data) => {
+  const hash = await apds.make(data)
+  const sig = await an.sign(hash, await apds.keypair())
+  console.log(sig)
+  await apds.add(sig)
+  const protocolMsg = await apds.make(sig)
 
-  const hash = await bogbot.make(data)
-
-  const sig = encode(nacl.sign(new TextEncoder().encode(timestamp + hash), decode(await bogbot.privkey())))
-  await bogbot.add(await bogbot.pubkey() + sig)
-  const protocolMsg = await bogbot.make(await bogbot.pubkey() + sig)
   db.put('previous', protocolMsg)
   return protocolMsg
 }
 
-bogbot.open = async (msg) => {
+apds.open = async (msg) => {
   try {
-    const pubkey = msg.substring(0, 44)
-    const sig = msg.substring(44)
-
-    const opened = new TextDecoder().decode(nacl.sign.open(decode(sig), decode(pubkey)))
-
-    return opened
+    return await an.open(msg)
   } catch (err) {
     //console.log('Not a valid Bog5 protocol message')
   }
@@ -137,15 +123,15 @@ bogbot.open = async (msg) => {
 
 import { yaml } from './lib/yaml.js'
 
-bogbot.parseYaml = async (doc) => {
+apds.parseYaml = async (doc) => {
   return await yaml.parse(doc)
 }
 
-bogbot.createYaml = async (obj, content) => {
+apds.createYaml = async (obj, content) => {
   return await yaml.create(obj, content)
 }
 
-bogbot.compose = async (content, prev) => {
+apds.compose = async (content, prev) => {
   let obj = {}
   if (prev) { obj = prev }
 
@@ -158,39 +144,39 @@ bogbot.compose = async (content, prev) => {
   if (previous) { obj.previous = previous}
 
   if (Object.keys(obj).length > 0) { 
-    const yaml = await bogbot.createYaml(obj, content)
-    return await bogbot.sign(yaml)
+    const yaml = await apds.createYaml(obj, content)
+    return await apds.sign(yaml)
   } else {
-    return await bogbot.sign(content)
+    return await apds.sign(content)
   } 
 }
 
-bogbot.make = async (data) => {
-  const hash = await bogbot.hash(data)
+apds.make = async (data) => {
+  const hash = await apds.hash(data)
 
   await db.put(hash, data)
 
   return hash
 }
 
-bogbot.get = async (hash) => {
+apds.get = async (hash) => {
   const blob = await db.get(hash)
 
   return blob
 }
 
-bogbot.put = async (key, value) => {
+apds.put = async (key, value) => {
   await db.put(key, value)
 }
 
-bogbot.rm = async (key) => {
+apds.rm = async (key) => {
   await db.rm(key)
 }
 
-bogbot.add = async (msg) => {
-  const opened = await bogbot.open(msg)
+apds.add = async (msg) => {
+  const opened = await apds.open(msg)
   if (opened) {
-    const hash = await bogbot.make(msg)
+    const hash = await apds.make(msg)
     if (!hashLog.includes(hash)) {
       hashLog.push(hash)
       const obj = {
@@ -199,7 +185,7 @@ bogbot.add = async (msg) => {
       }
       obj.author = obj.sig.substring(0, 44)
       obj.opened = opened
-      obj.text = await bogbot.get(obj.opened.substring(13))
+      obj.text = await apds.get(obj.opened.substring(13))
       obj.ts = obj.opened.substring(0, 13)
       openedLog.push(obj)
       newMessages = true
@@ -208,11 +194,11 @@ bogbot.add = async (msg) => {
   }
 }
 
-bogbot.getHashLog = async () => { return hashLog }
+apds.getHashLog = async () => { return hashLog }
 
-bogbot.getOpenedLog = async () => { return openedLog }
+apds.getOpenedLog = async () => { return openedLog }
 
-bogbot.query = async (query) => {
+apds.query = async (query) => {
   if (openedLog[0] && !query) { return openedLog }
   if (openedLog[0] && query.startsWith('?')) {
     const search = query.substring(1).replace(/%20/g, ' ').toUpperCase()
@@ -224,8 +210,8 @@ bogbot.query = async (query) => {
   }
 }
 
-bogbot.getPubkeys = async () => {
-  const arr = await bogbot.query()
+apds.getPubkeys = async () => {
+  const arr = await apds.query()
   const newSet = new Set()
   for (const msg of arr) {
     newSet.add(msg.author)
@@ -234,16 +220,16 @@ bogbot.getPubkeys = async () => {
   return newArr
 }
 
-bogbot.getLatest = async (pubkey) => {
+apds.getLatest = async (pubkey) => {
   const q = openedLog.filter(msg => msg.author === pubkey)
   return q[q.length -1]
 }
 
-bogbot.human = async (ts) => {
+apds.human = async (ts) => {
   return await human(new Date(parseInt(ts)))
 }
 
-bogbot.visual = async (pubkey) => {
+apds.visual = async (pubkey) => {
   return vb(decode(pubkey), 256)
 }
 

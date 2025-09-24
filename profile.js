@@ -1,14 +1,14 @@
 import { h } from './lib/h.js' 
-import { bogbot } from './bogbot.js'
+import { apds } from './apds.js'
 
 export const profile = async () => {
   const div = h('div')
 
-  const avatarImg = await bogbot.visual(await bogbot.pubkey())
+  const avatarImg = await apds.visual(await apds.pubkey())
 
-  const existingImage = await bogbot.get('image')
+  const existingImage = await apds.get('image')
   
-  if (existingImage) { avatarImg.src = await bogbot.get(existingImage)}
+  if (existingImage) { avatarImg.src = await apds.get(existingImage)}
 
   avatarImg.style = 'height: 30px; width: 30px; float: left; margin-right: 5px; object-fit: cover;'
 
@@ -46,13 +46,13 @@ export const profile = async () => {
           ctx.drawImage(img, 0, 0, width, height, 0, 0, cropWidth, cropHeight)
           const croppedImage = canvas.toDataURL()
           avatarImg.src = croppedImage
-          const hash = await bogbot.make(croppedImage)
-          await bogbot.put('image', hash)
+          const hash = await apds.make(croppedImage)
+          await apds.put('image', hash)
         } else {
           const croppedImage = canvas.toDataURL()
           avatarImg.src = img.src
-          const hash = await bogbot.make(img.src)
-          await bogbot.put('image', hash)
+          const hash = await apds.make(img.src)
+          await apds.put('image', hash)
         }
       }
       img.src = e.target.result
@@ -65,9 +65,9 @@ export const profile = async () => {
 
   div.appendChild(avatarImg)
 
-  div.appendChild(h('div', [await bogbot.pubkey()]))
+  div.appendChild(h('div', [await apds.pubkey()]))
 
-  const name = await bogbot.get('name')
+  const name = await apds.get('name')
   
   const namer = h('input', {
     placeholder: name || 'Name yourself'
@@ -79,7 +79,7 @@ export const profile = async () => {
     h('button', {onclick: async () => {
       if (namer.value) {
         namer.placeholder = namer.value
-        await bogbot.put('name', namer.value)
+        await apds.put('name', namer.value)
         namer.value = ''
       }
     }}, ['Save'])
