@@ -14,6 +14,22 @@ if (!await apds.pubkey()) {
 
 const apdsbot = async (ws) => {
   ws.onopen = async () => {
+    setTimeout(async () => {
+      const q = await apds.query()
+      for (const m of q) {
+        if (m.text) {
+          const yaml = await apds.parseYaml(m.text)
+          if (yaml.image) {
+            const get = await apds.get(yaml.image)
+            if (!get) {
+              ws.send(yaml.image)
+            }
+          }
+          //console.log(yaml)
+        }
+      }
+      //console.log(q)
+    }, 1000)
     console.log('CONNECTED!')
   }
   ws.onmessage = async (m) => {
@@ -27,6 +43,22 @@ const apdsbot = async (ws) => {
     if (m.data.length != 44) {
       await apds.make(m.data)
       await apds.add(m.data)
+      const opened = await apds.open(m.data)
+      if (opened) {
+        const content = await apds.get(opened.substring(13))
+        if (!content) {
+          console.log('no content')
+          ws.send(opened.substring(13))
+        }
+      }
+      const yaml = await apds.parseYaml(m.data)
+      if (yaml.previous) {
+        const prev = await apds.get(yaml.previous)
+        if (!prev) {
+          console.log('no previous')
+          ws.send(yaml.previous)
+        }
+      }
     }
   }
   ws.onclose = () => {
