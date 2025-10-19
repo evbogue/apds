@@ -79,7 +79,6 @@ apds.keypair = async () => {
 
 apds.pubkey = async () => {
   const keypair = await apds.keypair()
-  console.log(keypair)
   if (keypair) {
     return keypair.substring(0, 44)
   }
@@ -105,7 +104,6 @@ apds.hash = async (data) => { return await an.hash(data) }
 apds.sign = async (data) => {
   const hash = await apds.make(data)
   const sig = await an.sign(hash, await apds.keypair())
-  console.log(sig)
   await apds.add(sig)
   const protocolMsg = await apds.make(sig)
 
