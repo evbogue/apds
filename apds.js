@@ -188,6 +188,7 @@ apds.add = async (msg) => {
       openedLog.push(obj)
       newMessages = true
       sort = true
+      return true
     }
   }
 }
