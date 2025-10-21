@@ -88,7 +88,13 @@ const directory = async (r) => {
     const q = await apds.query(key)
     return new Response(JSON.stringify(q), {headers: header})
   } else {
-    return serveDir(r, {quiet: 'True'})
+    return serveDir(r, {
+      quiet: 'True',
+      root: "./",
+      onFound: (_path, c) => {
+        c.header("Access-Control-Allow-Origin", "*");
+      }
+    })
   }
 }
 
