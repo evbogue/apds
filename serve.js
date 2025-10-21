@@ -84,6 +84,10 @@ const directory = async (r) => {
     }
     return new Response(JSON.stringify(latest), {headers: header})
   }
+  if (key === 'all') {
+    const q = await apds.query()
+    return new Response(JSON.stringify(q), {headers: header})
+  }
   else if (key != '' && await apds.query(key)) {
     const q = await apds.query(key)
     return new Response(JSON.stringify(q), {headers: header})
