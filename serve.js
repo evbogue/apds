@@ -91,8 +91,8 @@ const directory = async (r) => {
     return serveDir(r, {
       quiet: 'True',
       root: "./",
-      onFound: (_path, c) => {
-        c.header("Access-Control-Allow-Origin", "*");
+      onFound: (_path, r) => {
+        r.header("Access-Control-Allow-Origin", "*");
       }
     })
   }
