@@ -90,10 +90,7 @@ const directory = async (r) => {
   } else {
     return serveDir(r, {
       quiet: 'True',
-      root: "./",
-      onFound: (_path, r) => {
-        r.header("Access-Control-Allow-Origin", "*");
-      }
+      cors: 'True'
     })
   }
 }
