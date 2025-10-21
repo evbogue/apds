@@ -89,8 +89,8 @@ const directory = async (r) => {
     return new Response(JSON.stringify(q), {headers: header})
   } else {
     return serveDir(r, {
-      quiet: 'True',
-      cors: 'True'
+      //quiet: 'True',
+      enableCors: 'True'
     })
   }
 }
