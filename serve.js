@@ -81,7 +81,7 @@ const directory = async (r) => {
     const q = await apds.query()
     return new Response(JSON.stringify(q), {headers: header})
   }
-  if (q[0]) {
+  if (q && q[0]) {
     return new Response(JSON.stringify(q), {headers: header})
   } else {
     return serveDir(r, {
