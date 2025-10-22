@@ -72,24 +72,16 @@ const directory = async (r) => {
   const header = new Headers()
   header.append("Content-Type", "application/json")
   header.append("Access-Control-Allow-Origin", "*")
+  const q = await apds.query(key)
   if (db[key]) {
     const ar = db[key]
     return new Response(JSON.stringify(ar), {headers: header})
-  }
-  if (await apds.getLatest(key)) {
-    const latest = await apds.getLatest(key)
-    if (!latest.text) {
-      const text = await apds.get(latest.opened.substring(13))
-      latest.text = text.value
-    }
-    return new Response(JSON.stringify(latest), {headers: header})
   }
   if (key === 'all') {
     const q = await apds.query()
     return new Response(JSON.stringify(q), {headers: header})
   }
-  else if (key != '' && await apds.query(key)) {
-    const q = await apds.query(key)
+  if (q[0]) {
     return new Response(JSON.stringify(q), {headers: header})
   } else {
     return serveDir(r, {
