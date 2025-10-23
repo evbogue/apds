@@ -2,7 +2,7 @@ import { decode } from './lib/base64.js'
 import { cachekv } from './lib/cachekv.js'
 import { human } from './lib/human.js'
 import { vb } from './lib/vb.js'
-import { an } from 'https://anproto.com/an.js'
+import { an } from 'https://esm.sh/gh/evbogue/anproto@ddc040c/an.js'
 
 let db
 let hashLog = []
