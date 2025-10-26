@@ -83,6 +83,9 @@ const directory = async (r) => {
   }
   if (q && q[0]) {
     return new Response(JSON.stringify(q), {headers: header})
+  } else if (await apds.get(key)) { 
+    const blob = await apds.get(key)
+    return new Response(blob, {headers: header})
   } else {
     return serveDir(r, {
       //quiet: 'True',
