@@ -47,7 +47,7 @@ apds.start = async (appId) => {
           obj.text = await apds.get(obj.opened.substring(13))
           obj.ts = obj.opened.substring(0, 13)
           newArray.push(obj)
-        } catch (err) { console.log(err) }
+        } catch (err) { /*console.log(err)*/ }
       }))
       const newLog = []
  
@@ -113,9 +113,13 @@ apds.sign = async (data) => {
 
 apds.open = async (msg) => {
   try {
-    return await an.open(msg)
+    if (msg.endsWith('==')) {
+      return await an.open(msg)
+    } //else {
+      //console.log('NOT A VALID SIGNATURE ' + msg)
+    //}
   } catch (err) {
-    //console.log('Not a valid Bog5 protocol message')
+    //console.log('Not a valid ANProto message')
   }
 }
 
