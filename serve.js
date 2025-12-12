@@ -81,6 +81,12 @@ const directory = async (r) => {
     const q = await apds.query()
     return new Response(JSON.stringify(q), {headers: header})
   }
+  if (key === 'latest') {
+    const q = await apds.query()
+    const cutoff = Date.now() - (5 * 60 * 1000)
+    const latest = q.filter(m => m.ts && parseInt(m.ts) > cutoff)
+    return new Response(JSON.stringify(latest), {headers: header})
+  }
   if (q && q[0]) {
     return new Response(JSON.stringify(q), {headers: header})
   } else if (await apds.get(key)) { 
