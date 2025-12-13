@@ -259,8 +259,12 @@ const readDerLength = (bytes, offset) => {
   return { length, read: 1 + numBytes }
 }
 
-const ecdsaDerToJose = (derSignature, size = 32) => {
-  const bytes = derSignature instanceof Uint8Array ? derSignature : new Uint8Array(derSignature)
+const ecdsaSigToJose = (signature, size = 32) => {
+  const bytes = signature instanceof Uint8Array ? signature : new Uint8Array(signature)
+
+  // Some runtimes already return the JOSE (raw r||s) format for ECDSA signatures.
+  if (bytes.length === size * 2 && bytes[0] !== 0x30) return bytes
+
   let offset = 0
   if (bytes[offset++] !== 0x30) throw new Error('Invalid DER signature (no sequence)')
   const seqLen = readDerLength(bytes, offset)
@@ -303,7 +307,7 @@ const createVapidJwt = async (endpoint) => {
   const derSig = new Uint8Array(
     await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, privateKey, encoder.encode(data))
   )
-  const joseSig = ecdsaDerToJose(derSig)
+  const joseSig = ecdsaSigToJose(derSig)
   const signature = base64UrlEncodeBytes(joseSig)
   return `${data}.${signature}`
 }
