@@ -113,31 +113,65 @@ let nextAllowedPushAt = 0
 let flushTimer = undefined
 const queuedPushSigs = new Set()
 
-const broadcastPush = async (payloadObj) => {
+const redactEndpoint = (endpoint) => {
+  try {
+    const u = new URL(endpoint)
+    const p = u.pathname || ''
+    const suffix = p.length > 14 ? p.slice(-14) : p
+    return `${u.origin}${suffix ? '/…' + suffix : ''}`
+  } catch {
+    const s = String(endpoint || '')
+    return s.length > 32 ? s.slice(0, 32) + '…' : s
+  }
+}
+
+const broadcastPushWithResults = async (payloadObj) => {
   const store = await readSubscriptions()
   const endpoints = Object.keys(store.subscriptions ?? {})
-  if (endpoints.length === 0) return
 
   const dead = new Set()
-  const results = await Promise.allSettled(
+  const results = await Promise.all(
     endpoints.map(async (endpoint) => {
-      const entry = store.subscriptions[endpoint]
-      if (!entry?.subscription) return
+      const entry = store.subscriptions?.[endpoint]
+      const subscription = entry?.subscription
+      if (!subscription) {
+        return { endpoint: redactEndpoint(endpoint), skipped: true }
+      }
+
       try {
-        const res = await sendWebPush(entry.subscription, payloadObj)
-        if (res.status === 404 || res.status === 410) dead.add(endpoint)
-      } catch {
-        // Best-effort.
+        const res = await sendWebPush(subscription, payloadObj)
+        const status = res.status
+        if (status === 404 || status === 410) dead.add(endpoint)
+        if (!res.ok) {
+          console.log('webpush send failed', { endpoint: redactEndpoint(endpoint), status })
+        }
+        return { endpoint: redactEndpoint(endpoint), status, ok: res.ok }
+      } catch (err) {
+        console.log('webpush send error', { endpoint: redactEndpoint(endpoint), err: String(err?.message || err) })
+        return { endpoint: redactEndpoint(endpoint), error: String(err?.message || err) }
       }
     })
   )
-  void results
 
   if (dead.size > 0) {
     for (const endpoint of dead) delete store.subscriptions[endpoint]
     store.updatedAt = Date.now()
     await writeSubscriptions(store)
   }
+
+  const okCount = results.filter(r => r.ok).length
+  const failCount = results.length - okCount
+  return {
+    stored: endpoints.length,
+    ok: okCount,
+    failed: failCount,
+    pruned: dead.size,
+    results
+  }
+}
+
+const broadcastPush = async (payloadObj) => {
+  await broadcastPushWithResults(payloadObj)
 }
 
 const scheduleFlush = (delayMs = 0) => {
@@ -444,7 +478,7 @@ const directory = async (r) => {
     store.updatedAt = Date.now()
     await writeSubscriptions(store)
 
-    return new Response(JSON.stringify({ ok: true }), { status: 201, headers: header })
+    return new Response(JSON.stringify({ ok: true, stored: Object.keys(store.subscriptions).length }), { status: 201, headers: header })
   }
 
   if (url.pathname === '/push/vapidPublicKey') {
@@ -460,8 +494,9 @@ const directory = async (r) => {
     if (r.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405, headers: header })
     }
-    await broadcastPush({ type: 'test', ts: Date.now() })
-    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: header })
+    const now = Date.now()
+    const report = await broadcastPushWithResults({ type: 'test', ts: now })
+    return new Response(JSON.stringify({ ok: true, ts: now, ...report }), { status: 200, headers: header })
   }
 
   const key = url.pathname.substring(1)
