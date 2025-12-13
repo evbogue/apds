@@ -141,11 +141,17 @@ const broadcastPushWithResults = async (payloadObj) => {
       try {
         const res = await sendWebPush(subscription, payloadObj)
         const status = res.status
+        let body
+        if (!res.ok) {
+          try {
+            body = (await res.text()).slice(0, 2000)
+          } catch {}
+        }
         if (status === 404 || status === 410) dead.add(endpoint)
         if (!res.ok) {
-          console.log('webpush send failed', { endpoint: redactEndpoint(endpoint), status })
+          console.log('webpush send failed', { endpoint: redactEndpoint(endpoint), status, body })
         }
-        return { endpoint: redactEndpoint(endpoint), status, ok: res.ok }
+        return { endpoint: redactEndpoint(endpoint), status, ok: res.ok, body }
       } catch (err) {
         console.log('webpush send error', { endpoint: redactEndpoint(endpoint), err: String(err?.message || err) })
         return { endpoint: redactEndpoint(endpoint), error: String(err?.message || err) }
