@@ -1,6 +1,7 @@
 import db from './db.json' with { type: 'json'}
 import { serveDir } from 'https://deno.land/std/http/file_server.ts'
 import { apds } from './apds.js'
+import { createGossip } from './gossip.js'
 
 await apds.start('apdsv1')
 
@@ -12,7 +13,19 @@ if (!await apds.pubkey()) {
   console.log('apdsbot started, your pubkey: ' + await apds.pubkey())
 }
 
+const sockets = new Set()
+const gossipQueue = createGossip({
+  getPeers: () => sockets,
+  has: async (hash) => !!(await apds.get(hash)),
+  request: (peer, hash) => {
+    if (peer.readyState === 1) peer.send(hash)
+  },
+  intervalMs: 10000,
+})
+gossipQueue.start()
+
 const apdsbot = async (ws) => {
+  sockets.add(ws)
   ws.onopen = async () => {
     setTimeout(async () => {
       const q = await apds.query()
@@ -38,10 +51,16 @@ const apdsbot = async (ws) => {
       const latest = await apds.getLatest(m.data)
       if (latest) { ws.send(latest.sig) }
       const got = await apds.get(m.data)
-      if (got) { ws.send(got) }
+      if (got) {
+        ws.send(got)
+        gossipQueue.resolve(m.data)
+      } else {
+        await gossipQueue.enqueue(m.data)
+      }
     }
     if (m.data.length != 44) {
-      await apds.make(m.data)
+      const storedHash = await apds.make(m.data)
+      gossipQueue.resolve(storedHash)
       await apds.add(m.data)
       const opened = await apds.open(m.data)
       if (opened) {
@@ -62,6 +81,7 @@ const apdsbot = async (ws) => {
     }
   }
   ws.onclose = () => {
+    sockets.delete(ws)
     console.log('DISCONNECTED!')
   }
 }
