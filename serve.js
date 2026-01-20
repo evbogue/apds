@@ -14,6 +14,24 @@ if (!await apds.pubkey()) {
 }
 
 const sockets = new Set()
+const REQUEST_COOLDOWN_MS = 30000
+const requestCooldown = new Map()
+
+const isHash = (value) => typeof value === 'string' && value.length === 44
+const canRequest = (hash) => {
+  const now = Date.now()
+  const last = requestCooldown.get(hash) || 0
+  if (now - last < REQUEST_COOLDOWN_MS) { return false }
+  requestCooldown.set(hash, now)
+  return true
+}
+
+const requestHash = (ws, hash) => {
+  if (!isHash(hash)) { return }
+  if (!canRequest(hash)) { return }
+  if (ws.readyState === 1) { ws.send(hash) }
+}
+
 const gossipQueue = createGossip({
   getPeers: () => sockets,
   has: async (hash) => !!(await apds.get(hash)),
@@ -35,7 +53,19 @@ const apdsbot = async (ws) => {
           if (yaml.image) {
             const get = await apds.get(yaml.image)
             if (!get) {
-              ws.send(yaml.image)
+              requestHash(ws, yaml.image)
+            }
+          }
+          if (yaml.body) {
+            const images = yaml.body.match(/!\[.*?\]\((.*?)\)/g)
+            if (images) {
+              for (const image of images) {
+                const src = image.match(/!\[.*?\]\((.*?)\)/)[1]
+                const imgBlob = await apds.get(src)
+                if (!imgBlob) {
+                  requestHash(ws, src)
+                }
+              }
             }
           }
           //console.log(yaml)
@@ -55,6 +85,7 @@ const apdsbot = async (ws) => {
         ws.send(got)
         gossipQueue.resolve(m.data)
       } else {
+        requestHash(ws, m.data)
         await gossipQueue.enqueue(m.data)
       }
     }
@@ -67,7 +98,7 @@ const apdsbot = async (ws) => {
         const content = await apds.get(opened.substring(13))
         if (!content) {
           console.log('no content')
-          ws.send(opened.substring(13))
+          requestHash(ws, opened.substring(13))
         }
       }
       const yaml = await apds.parseYaml(m.data)
@@ -75,7 +106,25 @@ const apdsbot = async (ws) => {
         const prev = await apds.get(yaml.previous)
         if (!prev) {
           console.log('no previous')
-          ws.send(yaml.previous)
+          requestHash(ws, yaml.previous)
+        }
+      }
+      if (yaml.image) {
+        const img = await apds.get(yaml.image)
+        if (!img) {
+          requestHash(ws, yaml.image)
+        }
+      }
+      if (yaml.body) {
+        const images = yaml.body.match(/!\[.*?\]\((.*?)\)/g)
+        if (images) {
+          for (const image of images) {
+            const src = image.match(/!\[.*?\]\((.*?)\)/)[1]
+            const imgBlob = await apds.get(src)
+            if (!imgBlob) {
+              requestHash(ws, src)
+            }
+          }
         }
       }
     }
