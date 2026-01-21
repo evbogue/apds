@@ -32,6 +32,12 @@ const requestHash = (ws, hash) => {
   if (ws.readyState === 1) { ws.send(hash) }
 }
 
+const requestFromPeer = (send, hash) => {
+  if (!isHash(hash)) { return }
+  if (!canRequest(hash)) { return }
+  send(hash)
+}
+
 const gossipQueue = createGossip({
   getPeers: () => sockets,
   has: async (hash) => !!(await apds.get(hash)),
@@ -77,62 +83,125 @@ const apdsbot = async (ws) => {
   }
   ws.onmessage = async (m) => {
     console.log('RECEIVED:' + m.data)
-    if (m.data.length === 44) {
-      const latest = await apds.getLatest(m.data)
-      if (latest) { ws.send(latest.sig) }
-      const got = await apds.get(m.data)
-      if (got) {
-        ws.send(got)
-        gossipQueue.resolve(m.data)
-      } else {
-        requestHash(ws, m.data)
-        await gossipQueue.enqueue(m.data)
-      }
-    }
-    if (m.data.length != 44) {
-      const storedHash = await apds.make(m.data)
-      gossipQueue.resolve(storedHash)
-      await apds.add(m.data)
-      const opened = await apds.open(m.data)
-      if (opened) {
-        const content = await apds.get(opened.substring(13))
-        if (!content) {
-          console.log('no content')
-          requestHash(ws, opened.substring(13))
-        }
-      }
-      const yaml = await apds.parseYaml(m.data)
-      if (yaml.previous) {
-        const prev = await apds.get(yaml.previous)
-        if (!prev) {
-          console.log('no previous')
-          requestHash(ws, yaml.previous)
-        }
-      }
-      if (yaml.image) {
-        const img = await apds.get(yaml.image)
-        if (!img) {
-          requestHash(ws, yaml.image)
-        }
-      }
-      if (yaml.body) {
-        const images = yaml.body.match(/!\[.*?\]\((.*?)\)/g)
-        if (images) {
-          for (const image of images) {
-            const src = image.match(/!\[.*?\]\((.*?)\)/)[1]
-            const imgBlob = await apds.get(src)
-            if (!imgBlob) {
-              requestHash(ws, src)
-            }
-          }
-        }
-      }
-    }
+    await handleIncomingMessage(m.data, (msg) => {
+      if (ws.readyState === 1) { ws.send(msg) }
+    })
   }
   ws.onclose = () => {
     sockets.delete(ws)
     console.log('DISCONNECTED!')
   }
+}
+
+const handleIncomingMessage = async (msg, send, logger = () => {}) => {
+  if (isHash(msg)) {
+    logger(`[gossip] recv hash ${msg}`)
+    const latest = await apds.getLatest(msg)
+    if (latest) { send(latest.sig) }
+    const got = await apds.get(msg)
+    if (got) {
+      send(got)
+      gossipQueue.resolve(msg)
+    } else {
+      requestFromPeer(send, msg)
+      await gossipQueue.enqueue(msg)
+    }
+    return
+  }
+  const storedHash = await apds.make(msg)
+  logger(`[gossip] recv blob ${storedHash} ${String(msg).slice(0, 80)}`)
+  gossipQueue.resolve(storedHash)
+  await apds.add(msg)
+  const opened = await apds.open(msg)
+  if (opened) {
+    const content = await apds.get(opened.substring(13))
+    if (!content) {
+      console.log('no content')
+      requestFromPeer(send, opened.substring(13))
+    }
+  }
+  const yaml = await apds.parseYaml(msg)
+  if (yaml.previous) {
+    const prev = await apds.get(yaml.previous)
+    if (!prev) {
+      console.log('no previous')
+      requestFromPeer(send, yaml.previous)
+    }
+  }
+  if (yaml.image) {
+    const img = await apds.get(yaml.image)
+    if (!img) {
+      requestFromPeer(send, yaml.image)
+    }
+  }
+  if (yaml.body) {
+    const images = yaml.body.match(/!\[.*?\]\((.*?)\)/g)
+    if (images) {
+      for (const image of images) {
+        const src = image.match(/!\[.*?\]\((.*?)\)/)[1]
+        const imgBlob = await apds.get(src)
+        if (!imgBlob) {
+          requestFromPeer(send, src)
+        }
+      }
+    }
+  }
+}
+
+const gossipHeaders = new Headers()
+gossipHeaders.set('Content-Type', 'application/json')
+gossipHeaders.set('Access-Control-Allow-Origin', '*')
+gossipHeaders.set('Access-Control-Allow-Headers', 'content-type')
+gossipHeaders.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+
+const jsonResponse = (body, status = 200) => new Response(JSON.stringify(body), {
+  status,
+  headers: gossipHeaders
+})
+
+const handleHttpGossip = async (r) => {
+  const url = new URL(r.url)
+  if (!url.pathname.startsWith('/gossip')) { return null }
+  if (r.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: gossipHeaders })
+  }
+  if (url.pathname === '/gossip' && r.method === 'POST') {
+    const body = await r.text()
+    const messages = []
+    await handleIncomingMessage(
+      body,
+      (msg) => messages.push(msg),
+      (line) => console.log(line)
+    )
+    if (messages.length) {
+      const preview = messages[0]
+      console.log(`[gossip] send ${messages.length} ${String(preview).slice(0, 80)}`)
+    }
+    return jsonResponse({ messages })
+  }
+  if (url.pathname === '/gossip/poll' && r.method === 'GET') {
+    const since = parseInt(url.searchParams.get('since') || '0', 10)
+    const limit = parseInt(url.searchParams.get('limit') || '200', 10)
+    const q = await apds.query()
+    const messages = []
+    let nextSince = since
+    if (q && q.length) {
+      for (const msg of q) {
+        const ts = parseInt(msg.ts || '0', 10)
+        if (!ts || ts <= since) { continue }
+        messages.push(msg.sig)
+        if (msg.text) { messages.push(msg.text) }
+        if (ts > nextSince) { nextSince = ts }
+        if (messages.length >= limit) { break }
+      }
+    }
+    if (messages.length) {
+      const preview = messages[0]
+      console.log(`[gossip] poll ${messages.length} ${String(preview).slice(0, 80)}`)
+    }
+    return jsonResponse({ messages, nextSince })
+  }
+  return jsonResponse({ error: 'not_found' }, 404)
 }
 
 const directory = async (r) => {
@@ -172,6 +241,8 @@ const directory = async (r) => {
 Deno.serve(
   {port: 9000},
   async (r) => {
+  const httpGossip = await handleHttpGossip(r)
+  if (httpGossip) { return httpGossip }
   try {
     const { socket, response } = Deno.upgradeWebSocket(r)
     await apdsbot(socket)
