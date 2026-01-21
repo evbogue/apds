@@ -17,16 +17,41 @@ apds.start = async (appId) => {
   if ('indexedDB' in globalThis) {
     try {
       db = await idbkv(appId)
+      const migrations = []
       const existingKeypair = await db.get('keypair')
-      if (!existingKeypair) {
+      const existingName = await db.get('name')
+      const existingImage = await db.get('image')
+      if (!existingKeypair || !existingName || !existingImage) {
         const legacy = await cachekv(appId)
         if (legacy) {
-          const legacyKeypair = await legacy.get('keypair')
-          if (legacyKeypair) {
-            await db.put('keypair', legacyKeypair)
-            await legacy.rm('keypair')
+          if (!existingKeypair) {
+            const legacyKeypair = await legacy.get('keypair')
+            if (legacyKeypair) {
+              await db.put('keypair', legacyKeypair)
+              await legacy.rm('keypair')
+              migrations.push('keypair')
+            }
+          }
+          if (!existingName) {
+            const legacyName = await legacy.get('name')
+            if (legacyName) {
+              await db.put('name', legacyName)
+              await legacy.rm('name')
+              migrations.push('name')
+            }
+          }
+          if (!existingImage) {
+            const legacyImage = await legacy.get('image')
+            if (legacyImage) {
+              await db.put('image', legacyImage)
+              await legacy.rm('image')
+              migrations.push('image')
+            }
           }
         }
+      }
+      if (migrations.length) {
+        console.log('apds: migrated legacy keys to IndexedDB', migrations.join(', '))
       }
     } catch (err) {
       console.warn('IndexedDB unavailable, falling back to Cache API', err)
