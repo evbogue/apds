@@ -17,41 +17,29 @@ apds.start = async (appId) => {
   if ('indexedDB' in globalThis) {
     try {
       db = await idbkv(appId)
-      const migrations = []
-      const existingKeypair = await db.get('keypair')
-      const existingName = await db.get('name')
-      const existingImage = await db.get('image')
-      if (!existingKeypair || !existingName || !existingImage) {
+      const migrationFlag = 'cachekv_migrated_v1'
+      const migrationDone = await db.get(migrationFlag)
+      if (!migrationDone) {
         const legacy = await cachekv(appId)
-        if (legacy) {
-          if (!existingKeypair) {
-            const legacyKeypair = await legacy.get('keypair')
-            if (legacyKeypair) {
-              await db.put('keypair', legacyKeypair)
-              await legacy.rm('keypair')
-              migrations.push('keypair')
+        const migrated = []
+        if (legacy && legacy.keys) {
+          const keys = await legacy.keys()
+          for (const key of keys) {
+            if (key === migrationFlag) continue
+            const value = await legacy.get(key)
+            if (value === undefined) continue
+            const existing = await db.get(key)
+            if (existing === undefined) {
+              await db.put(key, value)
             }
-          }
-          if (!existingName) {
-            const legacyName = await legacy.get('name')
-            if (legacyName) {
-              await db.put('name', legacyName)
-              await legacy.rm('name')
-              migrations.push('name')
-            }
-          }
-          if (!existingImage) {
-            const legacyImage = await legacy.get('image')
-            if (legacyImage) {
-              await db.put('image', legacyImage)
-              await legacy.rm('image')
-              migrations.push('image')
-            }
+            await legacy.rm(key)
+            migrated.push(key)
           }
         }
-      }
-      if (migrations.length) {
-        console.log('apds: migrated legacy keys to IndexedDB', migrations.join(', '))
+        await db.put(migrationFlag, new Date().toISOString())
+        if (migrated.length) {
+          console.log('apds: migrated cachekv to IndexedDB', migrated.join(', '))
+        }
       }
     } catch (err) {
       console.warn('IndexedDB unavailable, falling back to Cache API', err)
