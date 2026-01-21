@@ -1,5 +1,6 @@
 import { decode } from './lib/base64.js'
 import { cachekv } from './lib/cachekv.js'
+import { idbkv } from './lib/idbkv.js'
 import { human } from './lib/human.js'
 import { vb } from './lib/vb.js'
 import { an } from 'https://esm.sh/gh/evbogue/anproto@ddc040c/an.js'
@@ -13,7 +14,27 @@ let sort = true
 export const apds = {}
 
 apds.start = async (appId) => {
-  db = await cachekv(appId)
+  if ('indexedDB' in globalThis) {
+    try {
+      db = await idbkv(appId)
+      const existingKeypair = await db.get('keypair')
+      if (!existingKeypair) {
+        const legacy = await cachekv(appId)
+        if (legacy) {
+          const legacyKeypair = await legacy.get('keypair')
+          if (legacyKeypair) {
+            await db.put('keypair', legacyKeypair)
+            await legacy.rm('keypair')
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('IndexedDB unavailable, falling back to Cache API', err)
+    }
+  }
+  if (!db) {
+    db = await cachekv(appId)
+  }
   
   setInterval(async () => {
     if (newMessages) {
@@ -42,9 +63,30 @@ apds.start = async (appId) => {
             hash,
             sig: await apds.get(hash)
           }
+          if (!obj.sig) { return }
+          const sigHash = await apds.hash(obj.sig)
+          if (sigHash !== hash) {
+            console.warn('hashlog integrity: sig hash mismatch', hash)
+            await db.rm(hash)
+            return
+          }
           obj.author = obj.sig.substring(0, 44)
           obj.opened = await apds.open(obj.sig)
-          obj.text = await apds.get(obj.opened.substring(13))
+          if (!obj.opened || obj.opened.length < 14) {
+            console.warn('hashlog integrity: open failed', hash)
+            await db.rm(hash)
+            return
+          }
+          const contentHash = obj.opened.substring(13)
+          obj.text = await apds.get(contentHash)
+          if (obj.text) {
+            const contentSig = await apds.hash(obj.text)
+            if (contentSig !== contentHash) {
+              console.warn('hashlog integrity: content hash mismatch', hash)
+              await db.rm(contentHash)
+              return
+            }
+          }
           obj.ts = obj.opened.substring(0, 13)
           newArray.push(obj)
         } catch (err) { /*console.log(err)*/ }
@@ -235,4 +277,3 @@ apds.human = async (ts) => {
 apds.visual = async (pubkey) => {
   return vb(decode(pubkey), 256)
 }
-
