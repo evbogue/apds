@@ -35,7 +35,7 @@
     <script type="module">
       const baseUrl = `${window.location.origin}/share/share-button.js`
       const examples = {
-        plain: `<button id=\"shareButton\">Share on ANProto</button>\n<script type=\"module\">\n  import { attachShareButton } from '${baseUrl}'\n\n  attachShareButton(\n    document.querySelector('#shareButton'),\n    'Custom message text',\n    'optional-keypair-string'\n  )\n<\\/script>`,
+        plain: `<button id=\"shareButton\">Share on ANProto</button>\n<script type=\"module\">\n  import { attachShareButton } from '${baseUrl}'\n\n  attachShareButton(\n    document.querySelector('#shareButton'),\n    'Custom message text',\n    'optional-keypair-string'\n  )\n</script>`,
         import: `import { attachShareButton } from '${baseUrl}'\n\nconst button = document.querySelector('#shareButton')\nconst customMessage = document.querySelector('#customMessage')\nconst keypairInput = document.querySelector('#keypair')\n\nattachShareButton(\n  button,\n  () => customMessage.value,\n  () => keypairInput?.value\n)`
       }
       for (const [key, value] of Object.entries(examples)) {
