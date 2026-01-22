@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Share on ANProto Demo</title>
+    <style>
+      body { margin: 0; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Share on ANProto</h1>
+      <p>
+        This page demonstrates the ANProto share button module. Click the button to
+        open the popover, add your name and keypair, and draft a link to the current
+        page.
+      </p>
+      <button class="demo" id="shareButton">Share on ANProto</button>
+      <div class="examples">
+        <h2>Example: Plain Button</h2>
+        <pre><code data-example="plain"></code></pre>
+
+        <h2>Example: Import + Attach</h2>
+        <pre><code data-example="import"></code></pre>
+      </div>
+    </main>
+    <script type="module">
+      const baseUrl = `${window.location.origin}/share/share-button.js`
+      const examples = {
+        plain: `<button id=\"shareButton\">Share on ANProto</button>\n<script type=\"module\">\n  import { attachShareButton } from '${baseUrl}'\n\n  attachShareButton(document.querySelector('#shareButton'))\n<\\/script>`,
+        import: `import { attachShareButton } from '${baseUrl}'\n\nconst button = document.querySelector('#shareButton')\nattachShareButton(button)`
+      }
+      for (const [key, value] of Object.entries(examples)) {
+        const target = document.querySelector(`[data-example=\"${key}\"]`)
+        if (target) { target.textContent = value }
+      }
+
+      import { attachShareButton } from '/share/share-button.js'
+
+      const button = document.querySelector('#shareButton')
+      attachShareButton(button)
+    </script>
+  </body>
+</html>

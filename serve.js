@@ -1,5 +1,5 @@
 import db from './db.json' with { type: 'json'}
-import { serveDir } from 'https://deno.land/std/http/file_server.ts'
+import { serveDir, serveFile } from 'https://deno.land/std/http/file_server.ts'
 import { apds } from './apds.js'
 import { createGossip } from './gossip.js'
 
@@ -206,6 +206,9 @@ const handleHttpGossip = async (r) => {
 
 const directory = async (r) => {
   const url = new URL(r.url)
+  if (url.pathname === '/share' || url.pathname === '/share/') {
+    return serveFile(r, `${Deno.cwd()}/share/index.html`)
+  }
   const key = url.pathname.substring(1)
   const header = new Headers()
   header.append("Content-Type", "application/json")
