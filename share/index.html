@@ -26,23 +26,32 @@
       <button class="demo" id="shareButton">Share on ANProto</button>
       <div class="examples">
         <h2>Example: Plain Button</h2>
-        <pre><code data-example="plain"></code></pre>
+        <pre><code>&lt;button id="shareButton"&gt;Share on ANProto&lt;/button&gt;
+&lt;script type="module"&gt;
+  import { attachShareButton } from '/share/share-button.js'
+
+  attachShareButton(
+    document.querySelector('#shareButton'),
+    'Custom message text',
+    'optional-keypair-string'
+  )
+&lt;/script&gt;</code></pre>
 
         <h2>Example: Import + Attach</h2>
-        <pre><code data-example="import"></code></pre>
+        <pre><code>import { attachShareButton } from '/share/share-button.js'
+
+const button = document.querySelector('#shareButton')
+const customMessage = document.querySelector('#customMessage')
+const keypairInput = document.querySelector('#keypair')
+
+attachShareButton(
+  button,
+  () => customMessage.value,
+  () => keypairInput?.value
+)</code></pre>
       </div>
     </main>
     <script type="module">
-      const baseUrl = `${window.location.origin}/share/share-button.js`
-      const examples = {
-        plain: `<button id=\"shareButton\">Share on ANProto</button>\n<script type=\"module\">\n  import { attachShareButton } from '${baseUrl}'\n\n  attachShareButton(\n    document.querySelector('#shareButton'),\n    'Custom message text',\n    'optional-keypair-string'\n  )\n</script>`,
-        import: `import { attachShareButton } from '${baseUrl}'\n\nconst button = document.querySelector('#shareButton')\nconst customMessage = document.querySelector('#customMessage')\nconst keypairInput = document.querySelector('#keypair')\n\nattachShareButton(\n  button,\n  () => customMessage.value,\n  () => keypairInput?.value\n)`
-      }
-      for (const [key, value] of Object.entries(examples)) {
-        const target = document.querySelector(`[data-example=\"${key}\"]`)
-        if (target) { target.textContent = value }
-      }
-
       import { attachShareButton } from '/share/share-button.js'
 
       const button = document.querySelector('#shareButton')
