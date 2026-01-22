@@ -6,6 +6,9 @@
     <title>Share on ANProto Demo</title>
     <style>
       body { margin: 0; }
+      main { padding: 24px; }
+      label { display: grid; gap: 6px; margin: 12px 0; }
+      textarea { width: min(520px, 100%); }
     </style>
   </head>
   <body>
@@ -16,6 +19,10 @@
         open the popover, add your name and keypair, and draft a link to the current
         page.
       </p>
+      <label>
+        Custom text
+        <textarea id="customMessage" rows="4" cols="40" placeholder="Write a message to share..."></textarea>
+      </label>
       <button class="demo" id="shareButton">Share on ANProto</button>
       <div class="examples">
         <h2>Example: Plain Button</h2>
@@ -28,8 +35,8 @@
     <script type="module">
       const baseUrl = `${window.location.origin}/share/share-button.js`
       const examples = {
-        plain: `<button id=\"shareButton\">Share on ANProto</button>\n<script type=\"module\">\n  import { attachShareButton } from '${baseUrl}'\n\n  attachShareButton(document.querySelector('#shareButton'))\n<\\/script>`,
-        import: `import { attachShareButton } from '${baseUrl}'\n\nconst button = document.querySelector('#shareButton')\nattachShareButton(button)`
+        plain: `<button id=\"shareButton\">Share on ANProto</button>\n<script type=\"module\">\n  import { attachShareButton } from '${baseUrl}'\n\n  attachShareButton(\n    document.querySelector('#shareButton'),\n    'Custom message text',\n    'optional-keypair-string'\n  )\n<\\/script>`,
+        import: `import { attachShareButton } from '${baseUrl}'\n\nconst button = document.querySelector('#shareButton')\nconst customMessage = document.querySelector('#customMessage')\nconst keypairInput = document.querySelector('#keypair')\n\nattachShareButton(\n  button,\n  () => customMessage.value,\n  () => keypairInput?.value\n)`
       }
       for (const [key, value] of Object.entries(examples)) {
         const target = document.querySelector(`[data-example=\"${key}\"]`)
@@ -39,7 +46,8 @@
       import { attachShareButton } from '/share/share-button.js'
 
       const button = document.querySelector('#shareButton')
-      attachShareButton(button)
+      const customMessage = document.querySelector('#customMessage')
+      attachShareButton(button, () => customMessage.value)
     </script>
   </body>
 </html>

@@ -1,8 +1,17 @@
 import { apds } from '/apds.js'
 
-const defaultMessage = () => {
+const pageMarkdown = () => {
   const title = document.title ? document.title.trim() : 'Shared link'
-  return `${title}\n${window.location.href}`
+  const url = window.location.href
+  return `[${title}](${url})`
+}
+
+const composeMessage = (raw) => {
+  const trimmed = typeof raw === 'string' ? raw.trim() : ''
+  const base = pageMarkdown()
+  if (!trimmed) { return base }
+  if (trimmed.includes(window.location.href)) { return trimmed }
+  return `${trimmed}\n\n${base}`
 }
 
 const apdsReady = (async () => {
@@ -34,7 +43,7 @@ const saveConfig = async (config) => {
   }
 }
 
-const buildPopover = (config, onClose) => {
+const buildPopover = (config, onClose, initialMessage) => {
   const wrapper = document.createElement('div')
   wrapper.className = 'anproto-popover'
   wrapper.innerHTML = `
@@ -78,7 +87,7 @@ const buildPopover = (config, onClose) => {
 
   nameInput.value = config.name
   keypairInput.value = config.keypair
-  messageInput.value = defaultMessage()
+  messageInput.value = composeMessage(initialMessage)
   const persist = async () => {
     await saveConfig({
       name: nameInput.value,
@@ -150,7 +159,7 @@ const buildPopover = (config, onClose) => {
     const pubkey = await apds.pubkey()
     const name = (await apds.get('name')) || ''
     const image = await apds.get('image')
-    const message = messageInput.value.trim()
+    const message = composeMessage(messageInput.value)
     const meta = {}
     if (name) { meta.name = name }
     if (image) { meta.image = image }
@@ -186,7 +195,7 @@ const buildPopover = (config, onClose) => {
     } else {
       await apds.rm('previous')
     }
-    const published = await apds.compose(messageInput.value.trim())
+    const published = await apds.compose(composeMessage(messageInput.value))
     const signed = await apds.get(published)
     const opened = await apds.open(signed)
     const content = opened ? await apds.get(opened.substring(13)) : null
@@ -304,18 +313,30 @@ const applyStyles = () => {
   document.head.appendChild(style)
 }
 
-export const attachShareButton = (button) => {
+const resolveValue = (value) => {
+  return typeof value === 'function' ? value() : value
+}
+
+export const attachShareButton = (button, messageText, keypair) => {
   if (!button) { return }
   applyStyles()
 
   const openPopover = async () => {
     if (document.querySelector('.anproto-popover')) { return }
     const config = await loadConfig()
+    const resolvedKeypair = resolveValue(keypair)
+    if (typeof resolvedKeypair === 'string') {
+      await saveConfig({
+        name: config.name,
+        keypair: resolvedKeypair
+      })
+      config.keypair = resolvedKeypair
+    }
     const close = () => {
       document.removeEventListener('keydown', handleKeydown)
       document.body.removeChild(popover)
     }
-    const popover = buildPopover(config, close)
+    const popover = buildPopover(config, close, resolveValue(messageText))
 
     const handleOutside = (event) => {
       if (event.target === popover) { close() }
