@@ -235,8 +235,8 @@ const directory = async (r) => {
     return new Response(blob, {headers: header})
   } else {
     return serveDir(r, {
-      //quiet: 'True',
-      enableCors: 'True'
+      //quiet: true,
+      enableCors: true
     })
   }
 }
