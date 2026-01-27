@@ -188,6 +188,20 @@ apds.createYaml = async (obj, content) => {
   return await yaml.create(obj, content)
 }
 
+const isHash = (value) => typeof value === 'string' && value.length === 44
+
+const extractImagesFromBody = (body) => {
+  if (!body) { return [] }
+  const matches = body.match(/!\[.*?\]\((.*?)\)/g)
+  if (!matches) { return [] }
+  const hashes = []
+  for (const image of matches) {
+    const src = image.match(/!\[.*?\]\((.*?)\)/)?.[1]
+    if (isHash(src)) { hashes.push(src) }
+  }
+  return hashes
+}
+
 apds.compose = async (content, prev) => {
   let obj = {}
   if (prev) { obj = prev }
@@ -250,6 +264,56 @@ apds.add = async (msg) => {
       return true
     }
   }
+}
+
+apds.purgeAuthor = async (author) => {
+  if (!author || author.length !== 44) {
+    return { removed: 0, blobs: 0 }
+  }
+  const targets = openedLog.filter(msg => msg.author === author)
+  if (!targets.length) {
+    return { removed: 0, blobs: 0 }
+  }
+
+  const hashesToRemove = new Set()
+  const blobsToRemove = new Set()
+
+  for (const msg of targets) {
+    if (!msg || !msg.hash) { continue }
+    hashesToRemove.add(msg.hash)
+    const opened = msg.opened || (msg.sig ? await apds.open(msg.sig) : null)
+    const contentHash = opened && opened.length > 13 ? opened.substring(13) : null
+    const content = msg.text || (contentHash ? await apds.get(contentHash) : null)
+    if (contentHash && isHash(contentHash)) {
+      blobsToRemove.add(contentHash)
+    }
+    if (content) {
+      const parsed = await apds.parseYaml(content)
+      if (parsed?.image && isHash(parsed.image)) {
+        blobsToRemove.add(parsed.image)
+      }
+      const bodyImages = extractImagesFromBody(parsed?.body)
+      bodyImages.forEach(hash => blobsToRemove.add(hash))
+    }
+  }
+
+  for (const hash of blobsToRemove) {
+    await db.rm(hash)
+  }
+  for (const hash of hashesToRemove) {
+    await db.rm(hash)
+  }
+
+  if (hashesToRemove.size) {
+    hashLog = hashLog.filter(hash => !hashesToRemove.has(hash))
+    openedLog = openedLog.filter(msg => msg.author !== author)
+    newMessages = true
+    sort = false
+    await db.put('hashlog', JSON.stringify(hashLog))
+    await db.put('openedlog', JSON.stringify(openedLog))
+  }
+
+  return { removed: hashesToRemove.size, blobs: blobsToRemove.size }
 }
 
 apds.getHashLog = async () => { return hashLog }
