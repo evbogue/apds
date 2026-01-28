@@ -1,4 +1,12 @@
-import { apds } from '/apds.js'
+let apdsInstance = null
+
+const apdsReady = (async () => {
+  if (apdsInstance) { return apdsInstance }
+  const { apds } = await import(new URL('../apds.js', import.meta.url).href)
+  apdsInstance = apds
+  await apdsInstance.start('apdsv1-share')
+  return apdsInstance
+})()
 
 const pageMarkdown = () => {
   const title = document.title ? document.title.trim() : 'Shared link'
@@ -14,13 +22,8 @@ const composeMessage = (raw) => {
   return `${trimmed}\n\n${base}`
 }
 
-const apdsReady = (async () => {
-  await apds.start('apdsv1-share')
-  return apds
-})()
-
 const loadConfig = async () => {
-  await apdsReady
+  const apds = await apdsReady
   return {
     name: (await apds.get('name')) || '',
     keypair: (await apds.keypair()) || ''
@@ -28,7 +31,7 @@ const loadConfig = async () => {
 }
 
 const saveConfig = async (config) => {
-  await apdsReady
+  const apds = await apdsReady
   const name = config.name.trim()
   const keypair = config.keypair.trim()
   if (name) {
@@ -104,7 +107,7 @@ const buildPopover = (config, onClose, initialMessage) => {
 
   const fetchLatestFromPub = async () => {
     try {
-      await apdsReady
+      const apds = await apdsReady
       const pubkey = await apds.pubkey()
       if (!pubkey) { return null }
       const res = await fetch('https://pub.wiredove.net/gossip', {
@@ -155,6 +158,7 @@ const buildPopover = (config, onClose, initialMessage) => {
   previewButton.addEventListener('click', async () => {
     previewButton.textContent = 'Previewing...'
     await persist()
+    const apds = await apdsReady
     latestHash = await fetchLatestFromPub()
     const pubkey = await apds.pubkey()
     const name = (await apds.get('name')) || ''
@@ -183,6 +187,7 @@ const buildPopover = (config, onClose, initialMessage) => {
   publishButton.addEventListener('click', async () => {
     publishButton.textContent = 'Publishing...'
     await persist()
+    const apds = await apdsReady
     const pubkey = await apds.pubkey()
     if (!pubkey) {
       publishButton.textContent = 'Publish'
@@ -226,7 +231,7 @@ const buildPopover = (config, onClose, initialMessage) => {
 
   genkeyButton.addEventListener('click', async () => {
     genkeyButton.textContent = 'Working...'
-    await apdsReady
+    const apds = await apdsReady
     const keypair = await apds.generate()
     keypairInput.value = keypair
     await apds.put('keypair', keypair)
@@ -251,7 +256,7 @@ const applyStyles = () => {
     .anproto-card {
       width: min(520px, calc(100vw - 32px));
       background: #fff;
-      border: 1px solid #666;
+      border: 0;
       border-radius: 5px;
       padding: 16px;
       display: grid;
@@ -313,6 +318,49 @@ const applyStyles = () => {
   document.head.appendChild(style)
 }
 
+const applyWiredoveStyles = () => {
+  if (document.getElementById('anproto-wiredove-styles')) { return }
+  const style = document.createElement('style')
+  style.id = 'anproto-wiredove-styles'
+  style.textContent = `
+    .wiredove-share {
+      --wiredove-purple: #ac8aff;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 0 0 5px;
+      height: 22px;
+      border-radius: 999px;
+      border: 1px solid var(--wiredove-purple);
+      color: #fff;
+      background: var(--wiredove-purple);
+      font-weight: 600;
+      font-size: 12px;
+      line-height: 1;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+    }
+    .wiredove-share img {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
+    .wiredove-share:hover {
+      filter: brightness(0.95);
+    }
+  `
+  document.head.appendChild(style)
+}
+
+const ensureWiredoveLogo = (button) => {
+  const img = button.querySelector('img')
+  if (!img) { return }
+  if (!img.getAttribute('alt')) { img.setAttribute('alt', 'Wiredove logo') }
+  if (!img.getAttribute('src')) {
+    img.src = new URL('./assets/dovepurple_sm.png', import.meta.url).href
+  }
+}
+
 const resolveValue = (value) => {
   return typeof value === 'function' ? value() : value
 }
@@ -352,4 +400,12 @@ export const attachShareButton = (button, messageText, keypair) => {
   }
 
   button.addEventListener('click', openPopover)
+}
+
+export const attachWiredoveShareButton = (button, messageText, keypair) => {
+  if (!button) { return }
+  applyWiredoveStyles()
+  button.classList.add('wiredove-share')
+  ensureWiredoveLogo(button)
+  attachShareButton(button, messageText, keypair)
 }

@@ -24,11 +24,16 @@
         <textarea id="customMessage" rows="4" cols="40" placeholder="Write a message to share..."></textarea>
       </label>
       <button class="demo" id="shareButton">Share on ANProto</button>
+      <button class="wiredove-share" id="wiredoveShareButton">
+        Share
+        <img alt="Wiredove logo" />
+      </button>
       <div class="examples">
+        <p id="baseNote"></p>
         <h2>Example: Plain Button</h2>
         <pre><code>&lt;button id="shareButton"&gt;Share on ANProto&lt;/button&gt;
 &lt;script type="module"&gt;
-  import { attachShareButton } from '/share/share-button.js'
+  const { attachShareButton } = await import('__BASE_URL__share-button.js')
 
   attachShareButton(
     document.querySelector('#shareButton'),
@@ -37,10 +42,28 @@
   )
 &lt;/script&gt;</code></pre>
 
+        <h2>Example: Styled Wiredove Button</h2>
+        <pre><code>&lt;button class="wiredove-share" id="wiredoveShareButton"&gt;
+  Share
+  &lt;img alt="Wiredove logo" /&gt;
+&lt;/button&gt;
+&lt;script type="module"&gt;
+  const base = new URL('/share/', window.location.origin).href
+  const { attachWiredoveShareButton } = await import('__BASE_URL__share-button.js')
+
+  attachWiredoveShareButton(
+    document.querySelector('#wiredoveShareButton'),
+    'Custom message text',
+    'optional-keypair-string'
+  )
+&lt;/script&gt;</code></pre>
+
         <h2>Example: Import + Attach</h2>
-        <pre><code>import { attachShareButton } from '/share/share-button.js'
+        <pre><code>const base = new URL('/share/', window.location.origin).href
+const { attachShareButton, attachWiredoveShareButton } = await import('__BASE_URL__share-button.js')
 
 const button = document.querySelector('#shareButton')
+const wiredoveButton = document.querySelector('#wiredoveShareButton')
 const customMessage = document.querySelector('#customMessage')
 const keypairInput = document.querySelector('#keypair')
 
@@ -48,15 +71,32 @@ attachShareButton(
   button,
   () => customMessage.value,
   () => keypairInput?.value
+)
+
+attachWiredoveShareButton(
+  wiredoveButton,
+  () => customMessage.value,
+  () => keypairInput?.value
 )</code></pre>
       </div>
     </main>
     <script type="module">
-      import { attachShareButton } from '/share/share-button.js'
+      import { attachShareButton, attachWiredoveShareButton } from '/share/share-button.js'
 
       const button = document.querySelector('#shareButton')
+      const wiredoveButton = document.querySelector('#wiredoveShareButton')
       const customMessage = document.querySelector('#customMessage')
       attachShareButton(button, () => customMessage.value)
+      attachWiredoveShareButton(wiredoveButton, () => customMessage.value)
+
+      const base = new URL('/share/', window.location.origin).href
+      const baseNote = document.querySelector('#baseNote')
+      if (baseNote) {
+        baseNote.textContent = `Detected base URL: ${base}`
+      }
+      document.querySelectorAll('pre code').forEach((code) => {
+        code.textContent = code.textContent.replaceAll('__BASE_URL__', base)
+      })
     </script>
   </body>
 </html>

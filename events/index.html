@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chicago Events</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #1f1c2b;
+        --muted: #585a6a;
+        --accent: #ac8aff;
+        --card: #ffffff;
+        --surface: #f5f1ff;
+        --shadow: 0 18px 45px rgba(20, 12, 45, 0.12);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", "Segoe UI", Tahoma, sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 20% 20%, rgba(172, 138, 255, 0.22), transparent 55%),
+          radial-gradient(circle at 85% 15%, rgba(0, 194, 255, 0.18), transparent 50%),
+          linear-gradient(160deg, #fefcff 0%, #f3f0ff 60%, #eef7ff 100%);
+        min-height: 100vh;
+      }
+      header {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 56px 20px 24px;
+        text-align: left;
+      }
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      h1 {
+        font-family: "Fraunces", "Georgia", serif;
+        font-size: clamp(2.4rem, 4vw, 3.4rem);
+        margin: 18px 0 10px;
+      }
+      .subtitle {
+        font-size: 1.05rem;
+        color: var(--muted);
+        max-width: 640px;
+        line-height: 1.6;
+      }
+      main {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 12px 20px 80px;
+      }
+      .grid {
+        display: grid;
+        gap: 18px;
+      }
+      .event-card {
+        background: var(--card);
+        border-radius: 18px;
+        padding: 22px;
+        box-shadow: var(--shadow);
+        display: grid;
+        gap: 16px;
+        border: 1px solid rgba(172, 138, 255, 0.2);
+      }
+      .event-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .event-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 0;
+      }
+      .event-meta {
+        color: var(--muted);
+        font-size: 0.95rem;
+        display: grid;
+        gap: 6px;
+      }
+      .event-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .details {
+        display: grid;
+        gap: 4px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .details strong {
+        color: var(--ink);
+      }
+      .anproto-popover {
+        background: rgba(245, 241, 255, 0.65);
+        backdrop-filter: blur(10px);
+      }
+      .anproto-card {
+        border-radius: 18px;
+        border: 0;
+        box-shadow: 0 24px 60px rgba(35, 20, 70, 0.25);
+        background: #fff;
+      }
+      .anproto-title {
+        font-family: "Fraunces", "Georgia", serif;
+        font-size: 1.4rem;
+      }
+      .anproto-card input,
+      .anproto-card textarea {
+        border-radius: 12px;
+        border: 1px solid rgba(172, 138, 255, 0.35);
+        padding: 10px 12px;
+        font-family: "Space Grotesk", "Segoe UI", Tahoma, sans-serif;
+      }
+      .anproto-card button {
+        border-radius: 999px;
+        border: 1px solid transparent;
+        padding: 8px 16px;
+        font-weight: 600;
+      }
+      .anproto-primary {
+        background: var(--accent);
+        color: #fff;
+      }
+      .anproto-secondary {
+        background: #fff;
+        border-color: rgba(172, 138, 255, 0.5);
+        color: #3b2a77;
+      }
+      .anproto-tertiary {
+        background: var(--surface);
+        color: #3b2a77;
+      }
+      @media (min-width: 720px) {
+        .grid { grid-template-columns: 1fr 1fr; }
+        .event-card { height: 100%; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="eyebrow">In Real Life This Week</div>
+      <h1>Chicago Events</h1>
+      <p class="subtitle">
+        A shareable shortlist of Chicago tech events. Each event has its own ANProto share
+        button so you can quickly tell friends where you’re headed.
+      </p>
+    </header>
+    <main>
+      <section class="grid" id="eventsGrid"></section>
+    </main>
+
+    <script type="module">
+      const events = [
+        {
+          id: "longjump-ventures-preseed",
+          title: "Longjump Ventures: How A Pre-Seed Fund Evaluates Early-Stage Startups",
+          dateLabel: "Wed, Jan 28, 2026 · 2:00 PM - 4:00 PM",
+          dateKey: "2026-01-28T14:00:00-06:00",
+          hosts: "mHUB",
+          location: "mHUB, 1623 W Fulton St, Chicago, IL 60612"
+        },
+        {
+          id: "der-task-force-happy-hour",
+          title: "DER Task Force Happy Hour",
+          dateLabel: "Wed, Jan 28, 2026 · 5:30 PM - 7:00 PM",
+          dateKey: "2026-01-28T17:30:00-06:00",
+          hosts: "DER Task Force",
+          location: "Copper Club, 70 W Madison St, Chicago, IL 60602"
+        },
+        {
+          id: "great-chicago-food-bash",
+          title: "The 6th Annual Great Chicago Food Bash!",
+          dateLabel: "Wed, Jan 28, 2026 · 5:30 PM - 9:30 PM",
+          dateKey: "2026-01-28T17:30:00-06:00",
+          hosts: "Chicago Food & Beverage Startups",
+          location: "Hoste, 1857 W 16th St, Chicago, IL 60608"
+        },
+        {
+          id: "ux-social-sprig-chiirl",
+          title: "UX Social: Sprig (CHI IRL)",
+          dateLabel: "Wed, Jan 28, 2026 · 5:30 PM - 7:30 PM",
+          dateKey: "2026-01-28T17:30:00-06:00",
+          hosts: "Sprig",
+          location: "Chicago, Illinois"
+        },
+        {
+          id: "coworking-day-sinya",
+          title: "Coworking Day @ Sinya",
+          dateLabel: "Thu, Jan 29, 2026 · 10:00 AM - 1:00 PM",
+          dateKey: "2026-01-29T10:00:00-06:00",
+          hosts: "Sinya",
+          location: "Sinya, 354 W. Hubbard St, Chicago, IL"
+        },
+        {
+          id: "go-to-market-basics",
+          title: "Go To Market Basics: Building A Minimum Viable Marketing Plan",
+          dateLabel: "Thu, Jan 29, 2026 · 12:30 PM - 2:30 PM",
+          dateKey: "2026-01-29T12:30:00-06:00",
+          hosts: "mHUB",
+          location: "Virtual via Microsoft Teams"
+        },
+        {
+          id: "got-ai",
+          title: "GOT AI?",
+          dateLabel: "Thu, Jan 29, 2026 · 5:00 PM - 8:00 PM",
+          dateKey: "2026-01-29T17:00:00-06:00",
+          hosts: "Private executive roundtable",
+          location: "BIÂN, 600 W Chicago Ave Suite 001, Chicago, IL 60654"
+        },
+        {
+          id: "women-founders-connect",
+          title: "Women Founders Connect",
+          dateLabel: "Thu, Jan 29, 2026 · 5:30 PM - 7:30 PM",
+          dateKey: "2026-01-29T17:30:00-06:00",
+          hosts: "Women Founders Connect",
+          location: "Chicago, Illinois"
+        },
+        {
+          id: "to-javan-and-beyond",
+          title: "To Java [n] and Beyond!",
+          dateLabel: "Thu, Jan 29, 2026 · 6:00 PM - 8:30 PM",
+          dateKey: "2026-01-29T18:00:00-06:00",
+          hosts: "Oracle / CJUG",
+          location: "Microsoft Midwest District, 200 E Randolph St #200, Chicago, IL 60601"
+        },
+        {
+          id: "burbsec-east",
+          title: "BurbSec East — Sponsored by RedLegg!!",
+          dateLabel: "Thu, Jan 29, 2026 · 6:00 PM - Fri, Jan 30, 2026 · 12:00 AM",
+          dateKey: "2026-01-29T18:00:00-06:00",
+          hosts: "BurbSec",
+          location: "Navigator Taproom, 2211 N Milwaukee Ave, Chicago, IL"
+        },
+        {
+          id: "fuckup-nights-winter",
+          title: "Fuckup Nights Chicago — Winter Edition",
+          dateLabel: "Thu, Jan 29, 2026 · 6:00 PM - 9:00 PM",
+          dateKey: "2026-01-29T18:00:00-06:00",
+          hosts: "Fuckup Nights Chicago",
+          location: "Three Cities Social Club, 320 W Ohio St #7E, Chicago, IL 60654"
+        },
+        {
+          id: "chicago-tech-mixer-2026",
+          title: "Chicago Tech Mixer 2026",
+          dateLabel: "Thu, Jan 29, 2026 · 6:00 PM - 9:00 PM",
+          dateKey: "2026-01-29T18:00:00-06:00",
+          hosts: "connect in connect",
+          location: "Arlo Chicago, 168 N Michigan Ave, Chicago, IL"
+        },
+        {
+          id: "evo-vc-startups",
+          title: "Chicago EVO VC & Startups",
+          dateLabel: "Thu, Jan 29, 2026 · 6:30 PM - 9:30 PM",
+          dateKey: "2026-01-29T18:30:00-06:00",
+          hosts: "EVO VC & Startups",
+          location: "The Game Room, 12 S Michigan Ave, Chicago, IL 60603"
+        },
+        {
+          id: "seedcon-beyond-hype",
+          title: "Rattan L. Khosa SeedCon: Beyond the Hype",
+          dateLabel: "Fri, Jan 30, 2026 · 8:00 AM - 5:00 PM",
+          dateKey: "2026-01-30T08:00:00-06:00",
+          hosts: "Chicago Booth / Polsky Center",
+          location: "David Rubenstein Forum, 1201 E 60th St, Chicago, IL 60637"
+        },
+        {
+          id: "uchicago-founder-meetup",
+          title: "UChicago Founder Meetup",
+          dateLabel: "Fri, Jan 30, 2026 · 4:00 PM - 5:00 PM",
+          dateKey: "2026-01-30T16:00:00-06:00",
+          hosts: "LTF Ventures Community",
+          location: "Booth C-01"
+        },
+        {
+          id: "tech-x-poker-night",
+          title: "Tech X Poker Night (Vol. 2)",
+          dateLabel: "Sat, Jan 31, 2026 · 6:00 PM - 11:00 PM",
+          dateKey: "2026-01-31T18:00:00-06:00",
+          hosts: "Chicago tech community",
+          location: "Chicago, Illinois"
+        },
+        {
+          id: "ux-social-sprig",
+          title: "UX Social: Sprig",
+          dateLabel: "Wed, Feb 4, 2026 · 5:30 PM",
+          dateKey: "2026-02-04T17:30:00-06:00",
+          hosts: "Brittany Edwards, Athena Lin, Brittney, Courtney Stafford & 1 other",
+          location: "Location shown upon approval"
+        },
+        {
+          id: "one-million-cups",
+          title: "☕️ 1 Million Cups Chicago ☕️",
+          dateLabel: "Thu, Feb 5, 2026 · 9:00 AM",
+          dateKey: "2026-02-05T09:00:00-06:00",
+          hosts: "Chicago Tech Collaborative",
+          location: "TeamWorking by TechNexus"
+        },
+        {
+          id: "prompt-to-production",
+          title: "v0 Prompt to Production — The AI Collective Chicago",
+          dateLabel: "Thu, Feb 12, 2026 · 5:30 PM",
+          dateKey: "2026-02-12T17:30:00-06:00",
+          hosts: "The AI Collective & The AI Collective Chicago",
+          location: "100 S State St"
+        },
+        {
+          id: "innovation-summit",
+          title: "1871 Sports & Entertainment Innovation Summit",
+          dateLabel: "Fri, Feb 13, 2026 · 1:00 PM",
+          dateKey: "2026-02-13T13:00:00-06:00",
+          hosts: "1871",
+          location: "Chicago, Illinois"
+        },
+        {
+          id: "crypto-connections",
+          title: "Crypto & Connections",
+          dateLabel: "Fri, Feb 13, 2026 · 6:00 PM",
+          dateKey: "2026-02-13T18:00:00-06:00",
+          hosts: "Adem Arifi, Alex Nova & Chris Georgen",
+          location: "406 N Sangamon St"
+        }
+      ]
+
+      const grid = document.querySelector('#eventsGrid')
+
+      const buildCard = (event) => {
+        const card = document.createElement('article')
+        card.className = 'event-card'
+        card.id = event.id
+        card.innerHTML = `
+          <div class="event-header">
+            <div>
+              <h2 class="event-title">${event.title}</h2>
+            </div>
+            <div class="event-meta">
+              <div>${event.dateLabel}</div>
+              <div>Hosted by ${event.hosts}</div>
+            </div>
+          </div>
+          <div class="details">
+            <div><strong>Location:</strong> ${event.location}</div>
+          </div>
+          <div class="event-footer">
+            <button class="wiredove-share" type="button">
+              Share
+              <img alt="Wiredove logo" />
+            </button>
+          </div>
+        `
+        return card
+      }
+
+      events
+        .slice()
+        .sort((a, b) => new Date(a.dateKey) - new Date(b.dateKey))
+        .forEach((event) => grid.appendChild(buildCard(event)))
+
+      const base = new URL('/share/', window.location.origin).href
+      const { attachWiredoveShareButton } = await import(`${base}share-button.js`)
+
+      document.querySelectorAll('.event-card').forEach((card) => {
+        const button = card.querySelector('button')
+        const title = card.querySelector('.event-title')?.textContent?.trim() || 'Chicago event'
+        const eventUrl = `${window.location.origin}/events/#${card.id}`
+        attachWiredoveShareButton(button, `I'm going to: [${title}](${eventUrl})`)
+      })
+    </script>
+  </body>
+</html>

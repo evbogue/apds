@@ -209,6 +209,9 @@ const directory = async (r) => {
   if (url.pathname === '/share' || url.pathname === '/share/') {
     return serveFile(r, `${Deno.cwd()}/share/index.html`)
   }
+  if (url.pathname === '/events' || url.pathname === '/events/') {
+    return serveFile(r, `${Deno.cwd()}/events/index.html`)
+  }
   const key = url.pathname.substring(1)
   const header = new Headers()
   header.append("Content-Type", "application/json")
