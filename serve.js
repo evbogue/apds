@@ -216,6 +216,7 @@ const directory = async (r) => {
   const header = new Headers()
   header.append("Content-Type", "application/json")
   header.append("Access-Control-Allow-Origin", "*")
+  await apds.ensureOpenLog()
   const q = await apds.query(key)
   if (db[key]) {
     const ar = db[key]

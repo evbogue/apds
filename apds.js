@@ -13,6 +13,63 @@ let sort = true
 
 export const apds = {}
 
+const rebuildOpenedLog = async () => {
+  const newArray = []
+
+  await Promise.all(hashLog.map(async (hash) => {
+    try {
+      const obj = {
+        hash,
+        sig: await apds.get(hash)
+      }
+      if (!obj.sig) { return }
+      const sigHash = await apds.hash(obj.sig)
+      if (sigHash !== hash) {
+        console.warn('hashlog integrity: sig hash mismatch', hash)
+        await db.rm(hash)
+        return
+      }
+      obj.author = obj.sig.substring(0, 44)
+      obj.opened = await apds.open(obj.sig)
+      if (!obj.opened || obj.opened.length < 14) {
+        console.warn('hashlog integrity: open failed', hash)
+        await db.rm(hash)
+        return
+      }
+      const contentHash = obj.opened.substring(13)
+      obj.text = await apds.get(contentHash)
+      if (obj.text) {
+        const contentSig = await apds.hash(obj.text)
+        if (contentSig !== contentHash) {
+          console.warn('hashlog integrity: content hash mismatch', hash)
+          await db.rm(contentHash)
+          return
+        }
+      }
+      obj.ts = obj.opened.substring(0, 13)
+      newArray.push(obj)
+    } catch (err) { /* ignore per-entry */ }
+  }))
+
+  await newArray.sort((a, b) => a.ts - b.ts)
+
+  const newLog = []
+  await newArray.forEach(msg => {
+    newLog.push(msg.hash)
+  })
+
+  hashLog = newLog
+  openedLog = newArray
+  newMessages = true
+  sort = false
+}
+
+apds.ensureOpenLog = async () => {
+  if (sort || !openedLog.length) {
+    await rebuildOpenedLog()
+  }
+}
+
 apds.start = async (appId) => {
   if ('indexedDB' in globalThis) {
     try {
@@ -68,54 +125,7 @@ apds.start = async (appId) => {
   
   setInterval(async () => {
     if (sort) {
-      const newArray = []
-   
-      await Promise.all(hashLog.map(async (hash) => {
-        try {
-          const obj = {
-            hash,
-            sig: await apds.get(hash)
-          }
-          if (!obj.sig) { return }
-          const sigHash = await apds.hash(obj.sig)
-          if (sigHash !== hash) {
-            console.warn('hashlog integrity: sig hash mismatch', hash)
-            await db.rm(hash)
-            return
-          }
-          obj.author = obj.sig.substring(0, 44)
-          obj.opened = await apds.open(obj.sig)
-          if (!obj.opened || obj.opened.length < 14) {
-            console.warn('hashlog integrity: open failed', hash)
-            await db.rm(hash)
-            return
-          }
-          const contentHash = obj.opened.substring(13)
-          obj.text = await apds.get(contentHash)
-          if (obj.text) {
-            const contentSig = await apds.hash(obj.text)
-            if (contentSig !== contentHash) {
-              console.warn('hashlog integrity: content hash mismatch', hash)
-              await db.rm(contentHash)
-              return
-            }
-          }
-          obj.ts = obj.opened.substring(0, 13)
-          newArray.push(obj)
-        } catch (err) { /*console.log(err)*/ }
-      }))
-      const newLog = []
- 
-      await newArray.sort((a,b) => a.ts - b.ts) 
-  
-      await newArray.forEach(msg => {
-        newLog.push(msg.hash)
-      })
-  
-      hashLog = newLog
-      openedLog = newArray
-      newMessages = true
-      sort = false
+      await rebuildOpenedLog()
     }
   }, 20000)
 }
@@ -321,15 +331,15 @@ apds.getHashLog = async () => { return hashLog }
 apds.getOpenedLog = async () => { return openedLog }
 
 apds.query = async (query) => {
-  if (openedLog[0] && !query) { return openedLog }
-  if (openedLog[0] && query.startsWith('?')) {
+  if (!openedLog[0]) { return [] }
+  if (!query) { return openedLog }
+  if (query.startsWith('?')) {
     const search = query.substring(1).replace(/%20/g, ' ').toUpperCase()
     const result = openedLog.filter(msg => msg.text && msg.text.toUpperCase().includes(search))
     return result
-  } else if (openedLog[0]) {
-    const result = openedLog.filter(msg => msg.author == query || msg.hash == query)
-    return result
   }
+  const result = openedLog.filter(msg => msg.author == query || msg.hash == query)
+  return result
 }
 
 apds.getPubkeys = async () => {
