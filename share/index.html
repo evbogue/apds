@@ -5,95 +5,104 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Share on ANProto Demo</title>
     <style>
-      body { margin: 0; }
+      body { margin: 0; font-family: system-ui, sans-serif; }
       main { padding: 24px; }
       label { display: grid; gap: 6px; margin: 12px 0; }
-      textarea { width: min(520px, 100%); }
+      textarea { width: min(640px, 100%); min-height: 140px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+      .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+      .note { color: #555; max-width: 640px; }
     </style>
   </head>
   <body>
     <main>
       <h1>Share on ANProto</h1>
-      <p>
-        This page demonstrates the ANProto share button module. Click the button to
-        open the popover, add your name and keypair, and draft a link to the current
-        page.
+      <p class="note">
+        This demo shows the new Wiredove share redirect flow. The button opens
+        <code>https://wiredove.net/#share=&lt;json&gt;</code> in a new tab and pre-fills the composer.
       </p>
+
       <label>
-        Custom text
-        <textarea id="customMessage" rows="4" cols="40" placeholder="Write a message to share..."></textarea>
+        Custom share payload (JSON)
+        <textarea id="sharePayload">{
+  "text": "Check this out",
+  "title": "Example Page",
+  "url": "https://example.com/page"
+}</textarea>
       </label>
-      <button class="demo" id="shareButton">Share on ANProto</button>
-      <button class="wiredove-share" id="wiredoveShareButton">
-        Share
-        <img alt="Wiredove logo" />
-      </button>
+
+      <div class="row">
+        <button class="wiredove-share" id="wiredoveShareButton">
+          Share
+          <img alt="Wiredove logo" />
+        </button>
+        <button class="wiredove-share-icon" id="wiredoveIconButton" aria-label="Share on ANProto">
+          <img alt="Wiredove logo" />
+        </button>
+      </div>
+
       <div class="examples">
-        <p id="baseNote"></p>
-        <h2>Example: Plain Button</h2>
-        <pre><code>&lt;button id="shareButton"&gt;Share on ANProto&lt;/button&gt;
-&lt;script type="module"&gt;
-  const { attachShareButton } = await import('__BASE_URL__share-button.js')
-
-  attachShareButton(
-    document.querySelector('#shareButton'),
-    'Custom message text',
-    'optional-keypair-string'
-  )
-&lt;/script&gt;</code></pre>
-
-        <h2>Example: Styled Wiredove Button</h2>
+        <h2>Example: Wiredove Share Button</h2>
         <pre><code>&lt;button class="wiredove-share" id="wiredoveShareButton"&gt;
   Share
   &lt;img alt="Wiredove logo" /&gt;
 &lt;/button&gt;
 &lt;script type="module"&gt;
-  const base = new URL('/share/', window.location.origin).href
   const { attachWiredoveShareButton } = await import('__BASE_URL__share-button.js')
 
   attachWiredoveShareButton(
     document.querySelector('#wiredoveShareButton'),
-    'Custom message text',
-    'optional-keypair-string'
+    {
+      text: 'Check this out',
+      title: document.title,
+      url: window.location.href,
+      url: window.location.href
+    }
   )
 &lt;/script&gt;</code></pre>
 
-        <h2>Example: Import + Attach</h2>
-        <pre><code>const base = new URL('/share/', window.location.origin).href
-const { attachShareButton, attachWiredoveShareButton } = await import('__BASE_URL__share-button.js')
+        <h2>Example: Icon-Only Button</h2>
+        <pre><code>&lt;button class="wiredove-share-icon" id="wiredoveIconButton" aria-label="Share on ANProto"&gt;
+  &lt;img alt="Wiredove logo" /&gt;
+&lt;/button&gt;
+&lt;script type="module"&gt;
+  const { attachWiredoveIconShareButton } = await import('__BASE_URL__share-button.js')
 
-const button = document.querySelector('#shareButton')
-const wiredoveButton = document.querySelector('#wiredoveShareButton')
-const customMessage = document.querySelector('#customMessage')
-const keypairInput = document.querySelector('#keypair')
-
-attachShareButton(
-  button,
-  () => customMessage.value,
-  () => keypairInput?.value
-)
-
-attachWiredoveShareButton(
-  wiredoveButton,
-  () => customMessage.value,
-  () => keypairInput?.value
-)</code></pre>
+  attachWiredoveIconShareButton(
+    document.querySelector('#wiredoveIconButton'),
+    {
+      text: 'Check this out',
+      title: document.title,
+      url: window.location.href,
+      url: window.location.href
+    }
+  )
+&lt;/script&gt;</code></pre>
       </div>
     </main>
-    <script type="module">
-      import { attachShareButton, attachWiredoveShareButton } from '/share/share-button.js'
 
-      const button = document.querySelector('#shareButton')
-      const wiredoveButton = document.querySelector('#wiredoveShareButton')
-      const customMessage = document.querySelector('#customMessage')
-      attachShareButton(button, () => customMessage.value)
-      attachWiredoveShareButton(wiredoveButton, () => customMessage.value)
+    <script type="module">
+      import { attachWiredoveShareButton, attachWiredoveIconShareButton } from '/share/share-button.js'
+
+      const payloadInput = document.querySelector('#sharePayload')
+      const buildPayload = () => {
+        try {
+          return JSON.parse(payloadInput.value)
+        } catch (err) {
+          return { text: payloadInput.value }
+        }
+      }
+
+      attachWiredoveShareButton(
+        document.querySelector('#wiredoveShareButton'),
+        buildPayload
+      )
+
+      attachWiredoveIconShareButton(
+        document.querySelector('#wiredoveIconButton'),
+        buildPayload
+      )
 
       const base = new URL('/share/', window.location.origin).href
-      const baseNote = document.querySelector('#baseNote')
-      if (baseNote) {
-        baseNote.textContent = `Detected base URL: ${base}`
-      }
       document.querySelectorAll('pre code').forEach((code) => {
         code.textContent = code.textContent.replaceAll('__BASE_URL__', base)
       })
