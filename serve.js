@@ -38,6 +38,13 @@ const requestFromPeer = (send, hash) => {
   send(hash)
 }
 
+const broadcast = (msg, sender = null) => {
+  sockets.forEach((peer) => {
+    if (peer === sender) { return }
+    if (peer.readyState === 1) { peer.send(msg) }
+  })
+}
+
 const gossipQueue = createGossip({
   getPeers: () => sockets,
   has: async (hash) => !!(await apds.get(hash)),
@@ -85,7 +92,7 @@ const apdsbot = async (ws) => {
     console.log('RECEIVED:' + m.data)
     await handleIncomingMessage(m.data, (msg) => {
       if (ws.readyState === 1) { ws.send(msg) }
-    })
+    }, () => {}, ws)
   }
   ws.onclose = () => {
     sockets.delete(ws)
@@ -93,7 +100,7 @@ const apdsbot = async (ws) => {
   }
 }
 
-const handleIncomingMessage = async (msg, send, logger = () => {}) => {
+const handleIncomingMessage = async (msg, send, logger = () => {}, sender = null) => {
   if (isHash(msg)) {
     logger(`[gossip] recv hash ${msg}`)
     const latest = await apds.getLatest(msg)
@@ -112,6 +119,7 @@ const handleIncomingMessage = async (msg, send, logger = () => {}) => {
   logger(`[gossip] recv blob ${storedHash} ${String(msg).slice(0, 80)}`)
   gossipQueue.resolve(storedHash)
   await apds.add(msg)
+  broadcast(msg, sender)
   const opened = await apds.open(msg)
   if (opened) {
     const content = await apds.get(opened.substring(13))
