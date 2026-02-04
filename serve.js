@@ -160,48 +160,53 @@ const jsonResponse = (body, status = 200) => new Response(JSON.stringify(body), 
 })
 
 const handleHttpGossip = async (r) => {
-  const url = new URL(r.url)
-  if (!url.pathname.startsWith('/gossip')) { return null }
-  if (r.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: gossipHeaders })
-  }
-  if (url.pathname === '/gossip' && r.method === 'POST') {
-    const body = await r.text()
-    const messages = []
-    await handleIncomingMessage(
-      body,
-      (msg) => messages.push(msg),
-      (line) => console.log(line)
-    )
-    if (messages.length) {
-      const preview = messages[0]
-      console.log(`[gossip] send ${messages.length} ${String(preview).slice(0, 80)}`)
+  try {
+    const url = new URL(r.url)
+    if (!url.pathname.startsWith('/gossip')) { return null }
+    if (r.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: gossipHeaders })
     }
-    return jsonResponse({ messages })
-  }
-  if (url.pathname === '/gossip/poll' && r.method === 'GET') {
-    const since = parseInt(url.searchParams.get('since') || '0', 10)
-    const limit = parseInt(url.searchParams.get('limit') || '200', 10)
-    const q = await apds.query()
-    const messages = []
-    let nextSince = since
-    if (q && q.length) {
-      for (const msg of q) {
-        const ts = parseInt(msg.ts || '0', 10)
-        if (!ts || ts <= since) { continue }
-        messages.push(msg.sig)
-        if (msg.text) { messages.push(msg.text) }
-        if (ts > nextSince) { nextSince = ts }
-        if (messages.length >= limit) { break }
+    if (url.pathname === '/gossip' && r.method === 'POST') {
+      const body = await r.text()
+      const messages = []
+      await handleIncomingMessage(
+        body,
+        (msg) => messages.push(msg),
+        (line) => console.log(line)
+      )
+      if (messages.length) {
+        const preview = messages[0]
+        console.log(`[gossip] send ${messages.length} ${String(preview).slice(0, 80)}`)
       }
+      return jsonResponse({ messages })
     }
-    if (messages.length) {
-      const preview = messages[0]
-      console.log(`[gossip] poll ${messages.length} ${String(preview).slice(0, 80)}`)
+    if (url.pathname === '/gossip/poll' && r.method === 'GET') {
+      const since = parseInt(url.searchParams.get('since') || '0', 10)
+      const limit = parseInt(url.searchParams.get('limit') || '200', 10)
+      const q = await apds.query()
+      const messages = []
+      let nextSince = since
+      if (q && q.length) {
+        for (const msg of q) {
+          const ts = parseInt(msg.ts || '0', 10)
+          if (!ts || ts <= since) { continue }
+          messages.push(msg.sig)
+          if (msg.text) { messages.push(msg.text) }
+          if (ts > nextSince) { nextSince = ts }
+          if (messages.length >= limit) { break }
+        }
+      }
+      if (messages.length) {
+        const preview = messages[0]
+        console.log(`[gossip] poll ${messages.length} ${String(preview).slice(0, 80)}`)
+      }
+      return jsonResponse({ messages, nextSince })
     }
-    return jsonResponse({ messages, nextSince })
+    return jsonResponse({ error: 'not_found' }, 404)
+  } catch (err) {
+    console.error('[gossip] error', err)
+    return jsonResponse({ error: 'internal_error' }, 500)
   }
-  return jsonResponse({ error: 'not_found' }, 404)
 }
 
 const directory = async (r) => {
