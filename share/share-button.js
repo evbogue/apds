@@ -105,6 +105,9 @@ export const attachWiredoveShareButton = (button, payload) => {
   if (!button) { return }
   applyWiredoveStyles()
   button.classList.add('wiredove-share')
+  if (!button.getAttribute('title')) {
+    button.setAttribute('title', 'Share with ANProto')
+  }
   ensureWiredoveLogo(button)
   attachShareButton(button, payload)
 }
@@ -113,6 +116,9 @@ export const attachWiredoveIconShareButton = (button, payload) => {
   if (!button) { return }
   applyWiredoveStyles()
   button.classList.add('wiredove-share-icon')
+  if (!button.getAttribute('title')) {
+    button.setAttribute('title', 'Share with ANProto')
+  }
   if (!button.getAttribute('aria-label')) {
     button.setAttribute('aria-label', 'Share on ANProto')
   }
